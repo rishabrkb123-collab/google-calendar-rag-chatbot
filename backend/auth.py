@@ -36,8 +36,7 @@ def login(request: Request):
     flow = _make_flow()
     auth_url, state = flow.authorization_url(
         access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent",
+        prompt="select_account consent",
     )
     request.session["oauth_state"] = state
     return RedirectResponse(auth_url)
