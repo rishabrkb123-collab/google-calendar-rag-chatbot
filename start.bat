@@ -9,7 +9,7 @@ echo Starting Calendar Assistant...
 echo.
 
 REM Start backend in a new persistent terminal window
-start "Calendar Backend" cmd /k "cd /d "%BACKEND%" && venv\Scripts\activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+start "Calendar Backend" cmd /k "cd /d "%ROOT%" && backend\venv\Scripts\activate && uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
 
 REM Wait for backend to be ready
 echo Waiting for backend to start...
