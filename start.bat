@@ -8,12 +8,23 @@ set FRONTEND=%ROOT%frontend
 echo Starting Calendar Assistant...
 echo.
 
-REM Start backend in a new persistent terminal window
+REM Kill any existing uvicorn/node processes on our ports to avoid conflicts
+echo Cleaning up old processes...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000"') do taskkill /PID %%a /F >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5173"') do taskkill /PID %%a /F >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+REM Clear Python bytecode cache
+for /d /r "%BACKEND%" %%d in (__pycache__) do (
+    if exist "%%d" rd /s /q "%%d" >nul 2>&1
+)
+
+REM Start backend in a new persistent terminal window (run from project root so backend package resolves)
 start "Calendar Backend" cmd /k "cd /d "%ROOT%" && backend\venv\Scripts\activate && uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
 
 REM Wait for backend to be ready
 echo Waiting for backend to start...
-timeout /t 4 /nobreak >nul
+timeout /t 5 /nobreak >nul
 
 REM Start frontend in a new persistent terminal window
 start "Calendar Frontend" cmd /k "cd /d "%FRONTEND%" && npm run dev"
