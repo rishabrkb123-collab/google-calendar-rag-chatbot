@@ -8,7 +8,8 @@ from backend.session import save_tokens, get_tokens, get_user, clear_session, is
 router = APIRouter(prefix="/auth")
 
 SCOPES = [
-    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/calendar.events",
     "openid",
     "https://www.googleapis.com/auth/userinfo.email",
 ]
