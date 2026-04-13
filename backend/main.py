@@ -2,13 +2,16 @@ import os
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
+
+# Load .env FIRST before any other imports that might read env vars
+_env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=_env_path, override=True)
+
 from fastapi import FastAPI, APIRouter, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from backend.auth import router as auth_router
 from backend.calendar_api import build_credentials, list_calendars, fetch_events
-
-load_dotenv(Path(__file__).parent / ".env")
 from backend.session import get_tokens
 
 app = FastAPI(title="Calendar Chatbot API")
@@ -74,3 +77,16 @@ app.include_router(api_router)
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/debug/env")
+def debug_env():
+    client_id = os.getenv("GOOGLE_CLIENT_ID", "")
+    secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    return {
+        "env_file": str(_env_path),
+        "env_file_exists": _env_path.exists(),
+        "client_id_loaded": bool(client_id and client_id != "FILL_IN"),
+        "client_id_preview": client_id[:30] + "..." if len(client_id) > 30 else client_id,
+        "secret_loaded": bool(secret and secret != "FILL_IN"),
+    }
