@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, APIRouter, Request, HTTPException
@@ -6,9 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from backend.auth import router as auth_router
 from backend.calendar_api import build_credentials, list_calendars, fetch_events
-from backend.session import get_tokens
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
+from backend.session import get_tokens
 
 app = FastAPI(title="Calendar Chatbot API")
 
