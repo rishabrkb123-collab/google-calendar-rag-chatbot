@@ -1,7 +1,10 @@
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, APIRouter, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from googleapiclient.errors import HttpError
 from pydantic import BaseModel, Field
 from starlette.middleware.sessions import SessionMiddleware
@@ -202,3 +205,20 @@ def debug_env():
         "secret_loaded": bool(secret and secret != "FILL_IN"),
         "redirect_uri": oauth_config["redirect_uri"],
     }
+
+
+# ── Serve built React frontend (production / single-service deployment) ─────────
+# This MUST be registered after all API routes so the SPA catch-all
+# does not swallow /api, /auth, /chat, /health requests.
+_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+if _FRONTEND_DIST.exists():
+    # Static assets (JS bundles, CSS, images produced by `npm run build`)
+    _assets_dir = _FRONTEND_DIST / "assets"
+    if _assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        """Serve index.html for all unmatched routes (React SPA client-side routing)."""
+        return FileResponse(str(_FRONTEND_DIST / "index.html"))
