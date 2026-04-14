@@ -474,6 +474,9 @@ def _plan_chat_action(
         "Set exclude_holiday_calendars to true when the user asks to exclude holidays, festivals, "
         "or birthday calendars. "
         "If key details are missing, set needs_clarification true and ask a short question. "
+        "IMPORTANT: When the current message is a reply to a clarification (RECENT_HISTORY shows "
+        "the assistant asked a question about an event), keep the same action as the original "
+        "request and set target_hint and search_query to the event title from RECENT_HISTORY. "
         "For update/delete where the user says 'keep it the same' or 'same time', use the "
         "HISTORY_EVENTS times to fill in the start/end values — do NOT ask again. "
         "Use ISO 8601 datetime strings with timezone offsets for timed events. "
@@ -820,18 +823,19 @@ def chat(request: Request, payload: ChatRequest):
 
     if plan.get("needs_clarification"):
         # For update/delete: eagerly fetch the target event so it appears in
-        # history.events on the follow-up turn. This lets the LLM resolve
-        # "keep it the same" type replies against the event's actual times.
+        # history.events on the follow-up turn.  We search both future and the
+        # past 90 days so old events are not silently excluded.
         clarification_events: list[dict] = []
         if action in {"update_event", "delete_event"}:
             try:
+                _now = datetime.now(UTC)
                 prefetch_candidates, _ = fetch_all_events(
                     creds,
                     calendar_ids=[resolved_calendar_id]
                     if resolved_calendar_id and resolved_calendar_id != "all"
                     else None,
-                    time_min=plan.get("time_min") or None,
-                    time_max=plan.get("time_max") or None,
+                    time_min=plan.get("time_min") or (_now - timedelta(days=90)).isoformat(),
+                    time_max=plan.get("time_max") or (_now + timedelta(days=365)).isoformat(),
                 )
                 target_prefetch, _ = _resolve_target_event(
                     payload.message,
@@ -867,6 +871,13 @@ def chat(request: Request, payload: ChatRequest):
         plan["time_min"] = (_now - timedelta(days=30)).isoformat()
         plan["time_max"] = (_now + timedelta(days=90)).isoformat()
 
+    # For update/delete apply a default lookback so past events are reachable.
+    _fetch_time_min = plan.get("time_min") or None
+    _fetch_time_max = plan.get("time_max") or None
+    if action in {"update_event", "delete_event"} and not _fetch_time_min:
+        _now2 = datetime.now(UTC)
+        _fetch_time_min = (_now2 - timedelta(days=60)).isoformat()
+
     try:
         candidate_events, scanned_calendar_ids = fetch_all_events(
             creds,
@@ -874,8 +885,8 @@ def chat(request: Request, payload: ChatRequest):
             if resolved_calendar_id and resolved_calendar_id != "all"
             else None,
             q=(plan.get("search_query") or None) if action == "answer" else None,
-            time_min=plan.get("time_min") or None,
-            time_max=plan.get("time_max") or None,
+            time_min=_fetch_time_min,
+            time_max=_fetch_time_max,
         )
     except HttpError as exc:
         translate_google_api_error(exc)
@@ -976,10 +987,34 @@ def chat(request: Request, payload: ChatRequest):
         }
 
     if action in {"update_event", "delete_event"}:
+        # If the previous assistant turn was a clarification that already
+        # pinpointed exactly one event, use it directly.  The user's follow-up
+        # reply is providing the requested detail (e.g. "it's on March 4th"),
+        # NOT re-identifying the event — so re-ranking against that text causes
+        # spurious matches (e.g. "12 AM" → token "12" → December birthday event).
+        last_assistant_turn = next(
+            (t for t in reversed(payload.history) if t.role == "assistant"),
+            None,
+        )
+        clarification_target_id: Optional[str] = (
+            last_assistant_turn.events[0].get("id")
+            if last_assistant_turn and len(last_assistant_turn.events) == 1
+            else None
+        )
         try:
-            target_event, options = _resolve_target_event(
-                payload.message, plan, filtered_events, calendars, client
-            )
+            target_event: Optional[dict] = None
+            options: list[dict] = []
+            if clarification_target_id:
+                target_event = next(
+                    (e for e in filtered_events if e.get("id") == clarification_target_id),
+                    None,
+                )
+                if target_event:
+                    options = [target_event]
+            if not target_event:
+                target_event, options = _resolve_target_event(
+                    payload.message, plan, filtered_events, calendars, client
+                )
         except OllamaClientError as exc:
             raise HTTPException(status_code=503, detail={"message": str(exc)}) from exc
         if not target_event:
