@@ -19,8 +19,8 @@ class OllamaClient:
         self.embed_model = embed_model
 
     # ngrok free tunnels block non-browser requests unless this header is present.
-    # It is harmless for direct (non-ngrok) Ollama connections.
-    _HEADERS = {"ngrok-skip-browser-warning": "true"}
+    # Harmless for Cloudflare Tunnel and direct Ollama connections.
+    _HEADERS = {"ngrok-skip-browser-warning": "true", "User-Agent": "Mozilla/5.0"}
 
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         try:
