@@ -6,12 +6,32 @@ function getCalendarColor(event, calendars) {
   return cal?.color ?? '#4285F4'
 }
 
-export default function EventList({ events, calendars, loading }) {
+export default function EventList({ events, calendars, loading, error, onViewEvent, onEditEvent, onDeleteEvent }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-gray-500">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
         <p className="text-sm">Loading events...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-6 py-5 text-amber-50 shadow-lg shadow-amber-950/20">
+        <p className="text-sm font-semibold text-amber-200">Calendar data could not be loaded</p>
+        <p className="mt-2 text-sm text-amber-50/90">{error.message}</p>
+        {error.resolution ? <p className="mt-2 text-xs text-amber-100/80">{error.resolution}</p> : null}
+        {error.setupUrl ? (
+          <a
+            href={error.setupUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex text-xs font-medium text-amber-200 underline underline-offset-4"
+          >
+            Open Google Cloud API setup
+          </a>
+        ) : null}
       </div>
     )
   }
@@ -35,10 +55,13 @@ export default function EventList({ events, calendars, loading }) {
       <AnimatePresence>
         {events.map((event, index) => (
           <EventCard
-            key={event.id}
+            key={`${event.calendarId ?? 'primary'}:${event.id}`}
             event={event}
             calendarColor={getCalendarColor(event, calendars)}
             index={index}
+            onView={onViewEvent}
+            onEdit={onEditEvent}
+            onDelete={onDeleteEvent}
           />
         ))}
       </AnimatePresence>

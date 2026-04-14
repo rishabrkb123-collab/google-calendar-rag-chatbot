@@ -4,15 +4,12 @@
 **Status:** Approved  
 **Scope:** OAuth2 login, calendar event display, search, and filter UI
 
----
-
 ## Overview
 
 A web app that authenticates with Google Calendar via browser-based OAuth2, fetches all the user's events, and presents them in an animated, interactive dashboard with full-text search and multi-dimensional filtering.
 
 This is Phase 1 of a multi-phase project. The backend is Python (FastAPI) so Phase 2 (RAG + Ollama) can be added without architectural changes.
 
----
 
 ## Stack
 
@@ -28,7 +25,6 @@ This is Phase 1 of a multi-phase project. The backend is Python (FastAPI) so Pha
 | HTTP client | Axios (frontend) | Clean API calls with interceptors |
 | Startup | Windows .bat file | Starts both servers + opens browser |
 
----
 
 ## Architecture
 
@@ -51,7 +47,6 @@ This is Phase 1 of a multi-phase project. The backend is Python (FastAPI) so Pha
 └─────────────────────────────┘
 ```
 
----
 
 ## Backend
 
@@ -83,7 +78,6 @@ This is Phase 1 of a multi-phase project. The backend is Python (FastAPI) so Pha
 - On token expiry, auto-refresh using stored refresh token before retrying
 - CORS configured to allow only `http://localhost:5173`
 
----
 
 ## Frontend
 
@@ -117,7 +111,6 @@ This is Phase 1 of a multi-phase project. The backend is Python (FastAPI) so Pha
 - Local component state for search/filter values
 - `useEffect` + debounce for API calls on filter/search changes
 
----
 
 ## Startup (start.bat)
 
@@ -130,7 +123,6 @@ The batch file:
 
 Both processes run in separate persistent terminal windows (not flash-and-close).
 
----
 
 ## Project Structure
 
@@ -171,7 +163,6 @@ D:\Agentic Chatbot Google Calender - RAG\
 └── CLAUDE.md
 ```
 
----
 
 ## Data Flow
 
@@ -199,7 +190,6 @@ Dashboard mounts / filter changes
   → Frontend renders EventCards with stagger animation
 ```
 
----
 
 ## Error Handling
 
@@ -209,7 +199,6 @@ Dashboard mounts / filter changes
 - Network errors → toast notification in UI
 - Empty results → friendly empty state illustration + message
 
----
 
 ## Environment Variables (.env)
 
@@ -221,7 +210,6 @@ REDIRECT_URI=http://localhost:8000/auth/callback
 FRONTEND_URL=http://localhost:5173
 ```
 
----
 
 ## Out of Scope (Phase 1)
 

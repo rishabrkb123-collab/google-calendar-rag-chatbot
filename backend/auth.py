@@ -1,9 +1,15 @@
-import os
-from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
-from backend.session import save_tokens, get_tokens, get_user, clear_session, is_authenticated
+from backend.config import get_frontend_url, get_google_oauth_config
+from backend.session import (
+    save_tokens,
+    get_tokens,
+    get_user,
+    clear_session,
+    is_authenticated,
+)
 
 router = APIRouter(prefix="/auth")
 
@@ -16,18 +22,24 @@ SCOPES = [
 
 
 def _make_flow() -> Flow:
+    oauth_config = get_google_oauth_config()
+    if not oauth_config["client_id"] or not oauth_config["client_secret"]:
+        raise HTTPException(
+            status_code=500, detail="Google OAuth is not configured correctly"
+        )
+
     return Flow.from_client_config(
         {
             "web": {
-                "client_id": os.getenv("GOOGLE_CLIENT_ID"),
-                "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "client_id": oauth_config["client_id"],
+                "client_secret": oauth_config["client_secret"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [os.getenv("REDIRECT_URI", "http://localhost:8000/auth/callback")],
+                "redirect_uris": [oauth_config["redirect_uri"]],
             }
         },
         scopes=SCOPES,
-        redirect_uri=os.getenv("REDIRECT_URI", "http://localhost:8000/auth/callback"),
+        redirect_uri=oauth_config["redirect_uri"],
     )
 
 
@@ -57,8 +69,12 @@ def callback(request: Request, code: str, state: str):
     }
     service = build("oauth2", "v2", credentials=credentials)
     user_info = service.userinfo().get().execute()
-    save_tokens(request, tokens, {"email": user_info.get("email"), "name": user_info.get("name")})
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    save_tokens(
+        request,
+        tokens,
+        {"email": user_info.get("email"), "name": user_info.get("name")},
+    )
+    frontend_url = get_frontend_url()
     return RedirectResponse(f"{frontend_url}/dashboard")
 
 

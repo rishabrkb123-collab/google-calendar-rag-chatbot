@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 
 const QUICK_FILTERS = [
+  { label: 'All Events', value: 'all' },
   { label: 'Today', value: 'today' },
   { label: 'This Week', value: 'week' },
   { label: 'This Month', value: 'month' },
@@ -17,11 +18,11 @@ export default function FilterPanel({ calendars, filters, onChange }) {
   }
 
   const setQuickFilter = (value) => {
-    onChange({ ...filters, quickFilter: filters.quickFilter === value ? '' : value })
+    onChange({ ...filters, quickFilter: value })
   }
 
   const setDate = (key, val) => {
-    onChange({ ...filters, [key]: val })
+    onChange({ ...filters, [key]: val, quickFilter: '' })
   }
 
   return (
@@ -54,8 +55,9 @@ export default function FilterPanel({ calendars, filters, onChange }) {
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Date Range</h3>
         <div className="space-y-2">
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">From</label>
+            <label htmlFor="filter-from-date" className="text-xs text-gray-500 mb-1 block">From</label>
             <input
+              id="filter-from-date"
               type="date"
               value={filters.fromDate}
               onChange={(e) => setDate('fromDate', e.target.value)}
@@ -63,8 +65,9 @@ export default function FilterPanel({ calendars, filters, onChange }) {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">To</label>
+            <label htmlFor="filter-to-date" className="text-xs text-gray-500 mb-1 block">To</label>
             <input
+              id="filter-to-date"
               type="date"
               value={filters.toDate}
               onChange={(e) => setDate('toDate', e.target.value)}
@@ -102,7 +105,7 @@ export default function FilterPanel({ calendars, filters, onChange }) {
                 )}
               </div>
               <span className="text-xs text-gray-300 group-hover:text-white transition-colors truncate">
-                {cal.name}
+                {cal.name}{cal.isHoliday ? ' (Holiday)' : cal.isBirthday ? ' (Birthdays)' : ''}
               </span>
             </label>
           ))}

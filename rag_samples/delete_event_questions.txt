@@ -1,0 +1,500 @@
+1. Delete my meeting with Rahul tomorrow at 10 AM.
+2. Cancel the dentist appointment next Tuesday at 4 PM.
+3. Remove lunch with Priya on Friday.
+4. Delete the project review I scheduled for today at 6 PM.
+5. Cancel the event called Team Sync on Monday at 9:30 AM.
+6. Remove my call with Ankit this evening at 7 PM.
+7. Delete my mom's birthday event on June 18.
+8. Cancel tomorrow's workout session at 6 AM.
+9. Remove the deep work block tomorrow from 2 PM to 5 PM.
+10. Delete the coffee chat with Neha on Saturday at 11 AM.
+11. Cancel Budget Planning on April 20 at 3 PM.
+12. Remove tonight's coding session at 9 PM.
+13. Delete the all-day Diwali event.
+14. Cancel the Pay electricity bill reminder for this month.
+15. Remove my doctor follow-up two weeks from today at 5 PM.
+16. Delete the design team call next Wednesday at noon.
+17. Cancel the travel block on May 12.
+18. Remove my meeting with my manager on the first Monday of next month.
+19. Delete Quarterly Review on July 1 at 2 PM.
+20. Cancel my haircut appointment on Sunday at 5:30 PM.
+21. Remove yoga class this Friday at 7 AM.
+22. Delete the parent-teacher meeting on March 15 at 11 AM.
+23. Cancel the Submit tax documents event next Friday at 4 PM.
+24. Remove tomorrow's brainstorming session with the product team.
+25. Delete Interview with candidate on Thursday at 2 PM.
+26. Cancel my passport renewal reminder next month on the 10th.
+27. Remove Client Demo on Tuesday from 1 PM to 2 PM.
+28. Delete family dinner this Saturday at 8 PM.
+29. Cancel Buy groceries today at 7 PM.
+30. Remove the AI webinar next Thursday at 6 PM.
+31. Delete the Hackathon event for this weekend.
+32. Cancel tomorrow's 10 AM standup.
+33. Remove Call the bank tomorrow at 11:15 AM.
+34. Delete this month's Apartment rent payment reminder.
+35. Cancel Anniversary dinner on August 9 at 8 PM.
+36. Remove my sales team meeting on Monday at 4 PM.
+37. Delete tonight's reading block at 10 PM.
+38. Cancel my focus block this afternoon from 3 PM to 5 PM.
+39. Remove Pick up parcel tomorrow at 6:30 PM.
+40. Delete next Monday's strategy meeting from 2 PM to 4 PM.
+41. Cancel the visa interview reminder on September 4 at 9 AM.
+42. Remove tomorrow morning's meditation session.
+43. Delete Prepare presentation on Wednesday night.
+44. Cancel Lunch with college friends on April 25.
+45. Remove Office Closed on December 25.
+46. Delete my recruiter call tomorrow morning at 9 AM.
+47. Cancel Review contracts next Tuesday at 5 PM.
+48. Remove this Saturday's music class at 4 PM.
+49. Delete Take car for service on June 3 at 10:30 AM.
+50. Cancel my mentor check-in this Friday at 7 PM.
+51. Remove tomorrow's study block starting at 8 PM.
+52. Delete Plan vacation next Sunday at 1 PM.
+53. Cancel the product launch meeting on May 5 at 11 AM.
+54. Remove Renew gym membership on the 28th of this month.
+55. Delete the water plants reminder for tomorrow morning.
+56. Cancel Team Lunch on Friday from 12 PM to 1:30 PM.
+57. Remove Portfolio Review on Monday at 6 PM.
+58. Delete tonight's Language Practice event.
+59. Cancel the school reunion on November 11 at 5 PM.
+60. Remove this Sunday's Call grandma reminder.
+61. Delete my physiotherapist appointment next Thursday at 3 PM.
+62. Cancel Submit assignment for tonight at 11 PM.
+63. Remove tomorrow's Watch demo with client event.
+64. Delete Home cleaning on Saturday from 9 AM to noon.
+65. Cancel this month's credit card bill reminder.
+66. Remove the networking event next Wednesday at 7 PM.
+67. Delete Thursday's guitar practice at 8 PM.
+68. Cancel Meet landlord tomorrow at 5 PM.
+69. Remove School fees payment on June 10 at 10 AM.
+70. Delete my cousin catch-up next Sunday at 6 PM.
+71. Cancel this Friday afternoon's No meetings block.
+72. Remove Doctor annual checkup on October 14 at 2:30 PM.
+73. Delete the breakfast meeting on Tuesday at 8 AM.
+74. Cancel Prepare invoices this Friday at 3 PM.
+75. Remove Call electrician tomorrow at 1 PM.
+76. Delete the Board Meeting on the second Thursday of next month.
+77. Cancel MBA application deadline on December 1.
+78. Remove tomorrow's lunch break block.
+79. Delete Baby vaccination next Monday at 10:15 AM.
+80. Cancel Review resume tonight at 9:45 PM.
+81. Remove Photography workshop this Saturday at 3 PM.
+82. Delete this month's Expense Review.
+83. Cancel this Friday's weekly report reminder.
+84. Remove Parents anniversary on February 6.
+85. Delete the customer support call tomorrow at 12 PM.
+86. Cancel Meet accountant on Thursday at 4:30 PM.
+87. Remove tomorrow's Morning walk reminder.
+88. Delete Performance Review next month on the 22nd at 3 PM.
+89. Cancel Laptop repair pickup on Friday at 5:30 PM.
+90. Remove Brainstorm app ideas tomorrow night at 10 PM.
+91. Delete the farewell dinner next Saturday at 8:30 PM.
+92. Cancel Team Offsite on June 21.
+93. Remove Review legal documents on Monday at 1:30 PM.
+94. Delete the insurance agent reminder for next Wednesday at 2 PM.
+95. Cancel tonight's Exam preparation event.
+96. Remove the Volunteer event on Sunday from 10 AM to 2 PM.
+97. Delete Visit dentist three months from today at 11 AM.
+98. Cancel Launch campaign on April 30 at 9 AM.
+99. Remove this Saturday's Family video call.
+100. Delete the surprise party planning session on Thursday at 6 PM.
+101. Delete my 3 PM meeting tomorrow.
+102. Cancel that dentist thing next week.
+103. Remove lunch with Priya on Friday.
+104. Drop my project review for today.
+105. Get rid of Team Sync on Monday.
+106. Delete tonight's coding block.
+107. Cancel the Diwali event.
+108. Remove the electricity bill reminder.
+109. Delete my doctor follow-up.
+110. Cancel the design team call next Wednesday.
+111. Remove my travel block on May 12.
+112. Drop the meeting with my manager next month.
+113. Delete Quarterly Review.
+114. Cancel the haircut appointment on Sunday.
+115. Remove yoga class tomorrow morning.
+116. Delete the parent-teacher meeting.
+117. Cancel Submit tax documents.
+118. Remove tomorrow's brainstorming session.
+119. Delete the candidate interview on Thursday.
+120. Cancel the passport renewal reminder.
+121. Remove Client Demo next Tuesday.
+122. Delete family dinner this Saturday.
+123. Cancel Buy groceries tonight.
+124. Remove the AI webinar.
+125. Delete the Hackathon event.
+126. Cancel tomorrow's standup.
+127. Remove Call the bank.
+128. Delete Apartment rent payment for this month.
+129. Cancel Anniversary dinner.
+130. Remove the sales team meeting.
+131. Delete tonight's reading block.
+132. Cancel the focus block this afternoon.
+133. Remove Pick up parcel tomorrow.
+134. Delete the strategy meeting next Monday.
+135. Cancel the visa interview reminder.
+136. Remove my meditation session tomorrow morning.
+137. Delete Prepare presentation this Wednesday night.
+138. Cancel Lunch with college friends.
+139. Remove Office Closed.
+140. Delete my recruiter call tomorrow.
+141. Cancel Review contracts.
+142. Remove my music class this Saturday.
+143. Delete Take car for service.
+144. Cancel my mentor check-in.
+145. Remove tomorrow's study block.
+146. Delete Plan vacation.
+147. Cancel the product launch meeting.
+148. Remove Renew gym membership.
+149. Delete the water plants reminder.
+150. Cancel Team Lunch.
+151. Remove the portfolio review.
+152. Delete Language Practice for tonight.
+153. Cancel the school reunion.
+154. Remove Call grandma this Sunday.
+155. Delete my physiotherapist appointment.
+156. Cancel Submit assignment tonight.
+157. Remove the client demo watch tomorrow.
+158. Delete Home cleaning this Saturday.
+159. Cancel the credit card bill reminder.
+160. Remove the networking event.
+161. Delete Thursday's guitar practice.
+162. Cancel Meet landlord tomorrow.
+163. Remove School fees payment.
+164. Delete my cousin catch-up next Sunday.
+165. Cancel the No meetings block.
+166. Remove the annual checkup.
+167. Delete the breakfast meeting.
+168. Cancel Prepare invoices.
+169. Remove Call electrician.
+170. Delete the Board Meeting.
+171. Cancel the MBA deadline reminder.
+172. Remove today's lunch break block.
+173. Delete Baby vaccination next Monday.
+174. Cancel Review resume tonight.
+175. Remove the photography workshop.
+176. Delete Expense Review.
+177. Cancel the weekly report reminder.
+178. Remove Parents anniversary.
+179. Delete the customer support call.
+180. Cancel Meet accountant.
+181. Remove tomorrow's morning walk.
+182. Delete Performance Review.
+183. Cancel Laptop repair pickup.
+184. Remove Brainstorm app ideas.
+185. Delete the farewell dinner.
+186. Cancel Team Offsite.
+187. Remove Review legal documents.
+188. Delete the insurance reminder.
+189. Cancel tonight's exam prep.
+190. Remove the volunteer event.
+191. Delete my dentist visit.
+192. Cancel Launch campaign.
+193. Remove this Saturday's family video call.
+194. Delete the surprise party planning session.
+195. Cancel my call with Tokyo next Monday at 9 AM JST.
+196. Remove the New York team meeting on Thursday at 8 AM EST.
+197. Delete the Toronto catch-up on Saturday at 7 PM Eastern.
+198. Cancel the webinar on 14 May at 18:00 CET.
+199. Remove my Singapore travel block.
+200. Delete the London office prep call next Tuesday at 3 PM GMT.
+201. Cancel the Sydney sync this Wednesday at 4 PM AEST.
+202. Remove tonight's midnight deployment window.
+203. Delete the overnight train travel block next Friday.
+204. Cancel the red-eye flight event on Sunday night.
+205. Remove my Japan trip all-day event from April 3 to April 10.
+206. Delete the month-end call that starts at 11:45 PM.
+207. Cancel this month's close meeting at 11 PM UTC.
+208. Remove the breakfast sync with Berlin.
+209. Delete tomorrow's Dubai client call at 5 PM GST.
+210. Cancel tonight's Ramadan Iftar event.
+211. Remove the webinar reminder at 07:00 UTC.
+212. Delete the release freeze window this weekend.
+213. Cancel the Mexico City handover this Thursday.
+214. Remove my doctor appointment in Boston on June 12.
+215. Delete this Tuesday's California check-in.
+216. Cancel the travel hold for crossing time zones next weekend.
+217. Remove Design Crit from the Work calendar tomorrow.
+218. Delete Parents Day Lunch from my Personal calendar.
+219. Cancel the school reunion in the Family calendar on July 6.
+220. Remove the client review on the Sales calendar.
+221. Delete the dentist reminder in my Health calendar.
+222. Cancel today's code review block on the Engineering calendar.
+223. Remove date night from the Shared calendar this Saturday.
+224. Delete the rent payment reminder in my Bills calendar.
+225. Cancel soccer practice on the Kids calendar this Thursday.
+226. Remove the board meeting in the Leadership calendar on June 1.
+227. Delete my private note-taking block tomorrow at 3 PM.
+228. Cancel the public webinar on the Community calendar.
+229. Remove annual leave from the Work calendar for August 12 to August 16.
+230. Delete the visa appointment on the Travel calendar next Tuesday.
+231. Cancel the payroll reminder in the Finance calendar.
+232. Remove lunch with cousins from the Personal calendar.
+233. Delete tomorrow's interview panel from the Hiring calendar.
+234. Cancel the house inspection on the Home calendar next Friday.
+235. Remove the volunteer shift on the NGO calendar this Saturday.
+236. Delete the pharmacy pickup on the Errands calendar.
+237. Remove tomorrow's Kickoff meeting with Alex and Nina.
+238. Cancel Friday's client demo with dev@example.com, qa@example.com, and pm@example.com.
+239. Delete the private Performance Review on Monday at 4 PM.
+240. Remove Thursday's lunch meeting at Olive Bistro.
+241. Cancel the check-up next Tuesday at 5 PM at City Dental.
+242. Delete tomorrow's project sync that is visible only to me.
+243. Remove my recurring Wednesday 1:1 at 2 PM.
+244. Cancel Interview Loop on Friday from 10 AM to 1 PM.
+245. Delete Parents Meeting on April 28 at 6 PM.
+246. Remove tomorrow's brainstorming session that says bring roadmap draft.
+247. Cancel Renewal Negotiation next Monday at 5 PM.
+248. Delete the doctor's appointment on June 5 at Sunrise Clinic.
+249. Remove Monthly Finance Review on the last Friday at 4 PM.
+250. Cancel Team Lunch next Thursday at Spice Route.
+251. Delete Board Prep on Sunday at 7 PM.
+252. Remove my weekly yoga class at Community Center.
+253. Cancel tonight's reading block at 9:30 PM.
+254. Delete Release Planning this Friday at 2 PM.
+255. Remove next Wednesday's product demo with the beta dashboard note.
+256. Cancel Wedding Shopping on Saturday from 2 PM to 6 PM.
+257. Delete the architect follow-up on Monday at 5:15 PM.
+258. Remove Vaccination Appointment on June 14 at 10 AM.
+259. Cancel the networking breakfast downtown.
+260. Delete tomorrow's Podcast Recording with host@example.com.
+261. Remove the mentoring session next Tuesday at 7 PM.
+262. Cancel my hair appointment on April 19 at 5 PM.
+263. Delete the silent retreat on May 1.
+264. Remove Housewarming Party on June 22.
+265. Cancel the Sprint Retro on Friday at 4 PM.
+266. Delete this month's Payroll Approval on the 28th.
+267. Remove the event called Ship v2 tomorrow morning.
+268. Cancel Vendor Review next next Friday at 3 PM.
+269. Delete that thing with Priya after lunch tomorrow.
+270. Remove the prep block before the board meeting.
+271. Cancel my catch-up with the team at half past six this evening.
+272. Delete the reminder for the Tuesday after next at 11.
+273. Remove Thursday's block from quarter to four to quarter past five.
+274. Cancel the noon-ish Friday meeting.
+275. Delete tonight's late-night coding sprint.
+276. Remove the breakfast meeting on the day after payday.
+277. Cancel my annual physical around mid-June.
+278. Delete the reminder on the last weekday before month-end.
+279. Remove tomorrow's three-hour study session after dinner.
+280. Cancel the recurring event every alternate Monday at 9.
+281. Delete the visa expiration reminder that was 30 days early.
+282. Remove Submit reimbursement before EOD Friday.
+283. Cancel the planning meeting on the first working day after New Year.
+284. Delete my travel block for the weekend after next.
+285. Remove the weekday gym event except Wednesday.
+286. Cancel my son's PTM next month on the second Saturday.
+287. Delete office hours from 2 to 4 every Tuesday through the end of the quarter.
+288. Remove the recurring call on weekdays for the next two weeks at 9:15 AM.
+289. Cancel Thursday's one-time exception meeting.
+290. Delete the invoice reminder every last business day at 4 PM.
+291. Remove the monthly book club on the third Wednesday.
+292. Cancel the recurring standup at 10 AM until June 30.
+293. Delete Guitar Class on the first and third Saturdays.
+294. Remove the vitamins reminder every day except Sunday.
+295. Cancel date night every second Friday at 8 PM.
+296. Delete the sprint review every two weeks on Thursday.
+297. Remove the weekday call in the first week of next month at 11 AM.
+298. Cancel lunch with mom on the final Sunday of every month.
+299. Delete the weekly team sync that continues until the project ends.
+300. Remove today's daily focus block from 7 AM to 8 AM.
+301. Cancel the project checkpoint on the 1st and 15th of each month.
+302. Delete this week's therapy appointment on Thursday.
+303. Remove tonight's study reminder.
+304. Cancel the quarterly tax reminder on the last day of the quarter.
+305. Delete the recurring all-hands on the first Monday of every month.
+306. Remove Flight to Delhi on Friday night.
+307. Cancel tonight's sleep block from 11:30 PM to tomorrow 7 AM.
+308. Delete the maintenance window from Sunday 11 PM to Monday 3 AM.
+309. Remove New Year's Eve party on December 31.
+310. Cancel my graveyard shift on Wednesday night.
+311. Delete the overnight bus journey next Friday.
+312. Remove the deployment freeze from Saturday midnight to Sunday 8 AM.
+313. Cancel the moonlight trek from Saturday 11 PM to Sunday 4 AM.
+314. Delete today's late support handoff at 11:15 PM.
+315. Remove the meditation retreat from Friday evening to Sunday afternoon.
+316. Cancel the private event called Doctor stuff next Monday.
+317. Delete the event named catchup??? tomorrow at 4 pm.
+318. Remove fam dinner on Saturday evening.
+319. Cancel meetin with harish tmrw 10 am.
+320. Delete dnt appt nxt tue 4p.
+321. Remove the yearly reminder for mom birthday on 18 june.
+322. Cancel lunch wid priya fri 1 pm at cafe.
+323. Delete wrkout daily 6a except weekends.
+324. Remove renew license b4 month end.
+325. Cancel no-call time on my cal 2moro 2-5.
+326. Delete the landlord meeting reminder on Thursday at 5.
+327. Remove my maybe meeting with legal next week.
+328. Cancel fix life admin this Sunday afternoon.
+329. Delete chaos cleanup tonight.
+330. Remove my breathing room between 1 and 2 tomorrow.
+331. Cancel the deep work block I made for Wednesday morning.
+332. Delete the private hold called school stuff next Monday.
+333. Remove taxes near the filing deadline.
+334. Cancel the tentative Jaipur trip in early July.
+335. Delete the monthly rent reminder the night before it's due.
+336. Remove the HR call after my 3 PM interview tomorrow.
+337. Cancel the break between the two client meetings on Friday.
+338. Delete the prep session 45 minutes before Monday's dentist appointment.
+339. Remove the follow-up review three days after the kickoff.
+340. Cancel the one-hour buffer right after the board meeting next Tuesday.
+341. Delete the notes reminder 15 minutes after the team sync ends.
+342. Remove the packing event the night before my flight.
+343. Cancel the cool-down block after the marathon on Sunday evening.
+344. Delete the anniversary gift reminder one week before.
+345. Remove the recurring prep slot before every monthly review.
+346. Cancel the airport leave reminder 4 hours before departure.
+347. Delete tomorrow's post-demo debrief.
+348. Remove the buffer before travel from 6 PM to 8 PM Friday.
+349. Cancel the aftercare block after my surgery appointment.
+350. Delete the charge-devices reminder before the offsite.
+351. Remove the commute hold before tomorrow's doctor visit.
+352. Cancel the celebration dinner after the results are announced.
+353. Delete the recovery time on the day after the exam.
+354. Remove the webinar dry run one day before.
+355. Cancel the 20-minute settling time before my interview tomorrow morning.
+356. Delete the one-hour reminder for my parent-teacher meeting next Friday.
+357. Remove the dentist appointment tomorrow at 4 PM with the multiple reminders.
+358. Cancel the private legal call on Monday at 9 AM.
+359. Delete the weekly staff meeting every Tuesday at 10 AM.
+360. Remove the birthday dinner on Saturday at 8 PM.
+361. Cancel the annual tax filing reminder for March 31.
+362. Delete the daily medicine reminder at 8 AM and 8 PM.
+363. Remove tomorrow's focus block from 2 PM to 5 PM with no reminders.
+364. Cancel the workshop next Thursday at 3 PM.
+365. Delete the bill payment event on the 5th of every month.
+366. Remove Architecture Review tomorrow at noon in Meeting Room 4.
+367. Cancel my casual catch-up with Joe this Friday at 4:10 PM.
+368. Delete the salon visit on the first Saturday next month.
+369. Remove Parent Call every Sunday night at 9:05 PM.
+370. Cancel the rehearsal on Wednesday from 6:05 PM to 7:35 PM.
+371. Delete tomorrow's quick sync at 08:05.
+372. Remove the project check-in at exactly 1:01 PM on April 1.
+373. Cancel my weekday meal break from 12:55 PM to 1:25 PM.
+374. Delete next Monday's portfolio review at 3:05 PM.
+375. Remove tomorrow's blood test at 07:05.
+376. Cancel leap day brunch on February 29.
+377. Delete tax prep on the last Sunday of February.
+378. Remove the 31st reminder in months that have 31 days.
+379. Cancel year-end reflection on December 31.
+380. Delete next-quarter planning on the first day of the next quarter.
+381. Remove the daylight saving check call.
+382. Cancel fiscal year close on March 31.
+383. Delete the recurring February 28 subscription review reminder.
+384. Remove the tax estimate review in the last month of each quarter.
+385. Cancel Practica oral tomorrow at 5 PM.
+386. Delete Eid lunch on the Family calendar.
+387. Remove Sunday's puja at 7 AM.
+388. Cancel Christmas Eve dinner on December 24 at 8 PM.
+389. Delete Ganesh Visarjan this year.
+390. Remove Tamil class every Saturday at 10 AM.
+391. Cancel this week's Friday prayer reminder at 1:15 PM.
+392. Delete Lunar New Year dinner on the eve of Lunar New Year.
+393. Remove Ramadan meal prep tonight at 5 PM.
+394. Cancel Easter choir practice on Sunday morning.
+395. Delete AI/ML roadmap review next Tuesday at 2 PM.
+396. Remove Q2 OKR reset plus budget alignment on Monday at 11 AM.
+397. Cancel App Store rejection postmortem tomorrow at 5 PM.
+398. Delete Fix PROD login issue tonight at 8 PM.
+399. Remove Resume pass no. 2 this Sunday at 4 PM.
+400. Cancel API v2 / partner sync on Thursday at 3 PM.
+401. Delete 1:1 with CTO on Friday at 6 PM.
+402. Remove UX crit and handoff on Wednesday at 12:15 PM.
+403. Cancel Send FY26 numbers next Monday at 9:10 AM.
+404. Delete Founders' dinner on June 2 at 7 PM.
+405. Remove my kid's school play next Thursday at 5 PM.
+406. Cancel dog grooming on Saturday at 2 PM.
+407. Delete the vet follow-up two weeks from now at 11 AM.
+408. Remove the meal with grandma this Sunday at 1 PM.
+409. Cancel the school bus fee reminder on the 7th of each month.
+410. Delete date night every third Saturday at 8:30 PM.
+411. Remove Arjun's football practice every Wednesday at 5 PM.
+412. Cancel the family budget review on the first Sunday of every month.
+413. Delete my prenatal checkup on June 21 at 9 AM.
+414. Remove tomorrow's parent pickup duty at 2:30 PM.
+415. Cancel the tentative coffee with investors next Tuesday at 10 AM.
+416. Delete the maybe-doctor visit on Friday afternoon.
+417. Remove the placeholder called hold for builder visit next week.
+418. Cancel the possible client dinner on Thursday night.
+419. Delete the soft block for personal admin tomorrow morning.
+420. Remove the hold titled if needed for revisions tonight at 9 PM.
+421. Cancel the event called TBD vendor call next Wednesday at 4 PM.
+422. Delete my option block on Friday from 3 to 5.
+423. Remove reserve time for spillover work tomorrow late afternoon.
+424. Cancel the fallback interview slot for Monday at 11 AM.
+425. Delete the reminder saying remind me to breathe when the deadline hits tomorrow at 5.
+426. Remove Please don't let me miss this demo on Friday at 2 PM.
+427. Cancel Important adulting on Sunday at noon.
+428. Delete my tiny meeting with my future self tonight at 11:59 PM.
+429. Remove the hold for panic-prep before Monday's presentation.
+430. Cancel that bill I always forget on the 12th of every month.
+431. Delete stop procrastinating tomorrow at 8 AM.
+432. Remove me-time on Saturday evening.
+433. Cancel the private event called not work tonight from 6 PM to 9 PM.
+434. Delete my to-be-determined errands block on the weekend.
+435. Remove the recurring weekday standup for the next 6 weeks at 9:30 AM.
+436. Cancel the lunch-and-learn on the second Wednesday of every month.
+437. Delete the reminder for the first weekday after the 25th to review payroll.
+438. Remove the board prep block before each quarterly board meeting.
+439. Cancel the customer follow-up every third business day of the month.
+440. Delete the recurring night class every Monday and Thursday until December.
+441. Remove the all-day travel hold for every Friday in August.
+442. Cancel the recurring clinic visit every 6 weeks on Tuesday at 3 PM.
+443. Delete deep work every morning next week except Thursday.
+444. Remove the rehearsal on the two days before the concert.
+445. Cancel Final interview tomorrow at 9 AM with ceo@example.com.
+446. Delete the workday shut down my laptop reminder at 5:45 PM.
+447. Remove the billing audit on the final Friday of each quarter at 11 AM.
+448. Cancel Medical Leave for next Monday.
+449. Delete the monthly family call on the first Sunday at 8 PM.
+450. Remove the deployment window every other Wednesday from 11 PM to 1 AM.
+451. Cancel the school holiday all-day event for the first week of June.
+452. Delete the prayer meeting every day at 6 AM for the next 9 days.
+453. Remove the exam reminder 48 hours before May 14.
+454. Cancel my work anniversary reminder on September 12.
+455. Delete the panel interview on the Hiring calendar next Friday.
+456. Remove gardening every Saturday morning from 7:30 AM to 9 AM.
+457. Cancel the personal finance review on the last calendar day of the month.
+458. Delete the move-out checklist block on the evening before my lease ends.
+459. Remove the bike service reminder six months from now.
+460. Cancel my office commute block every Tuesday and Thursday from 8 AM to 9 AM.
+461. Delete the Community calendar workshop on June 9 at 6 PM.
+462. Remove my niece birthday reminder on August 2.
+463. Cancel the medication refill reminder every 28 days at 9 AM.
+464. Delete the salary negotiation prep block before my manager 1:1.
+465. Remove Shift left review for tomorrow at 10:40 AM.
+466. Cancel catchup with DevOps at 16:20 Thursday.
+467. Delete hydrate every Mon Wed Fri at 05:50.
+468. Remove account reconciliation on 30/06 at 14:00.
+469. Cancel tomorrow's doc review block from 13:10 to 14:55.
+470. Delete PTM for Riya on 07/08 at 11:30 AM.
+471. Remove renew DL on 5 Sep at 10.
+472. Cancel my CAB review for 2026-09-14 18:00.
+473. Delete the private hold reset on New Year's Eve.
+474. Remove the yearly reminder on 18/11 to submit insurance proof.
+475. Cancel the short sync with Ken before the release tomorrow morning.
+476. Delete my quiet hour after lunch every day this week.
+477. Remove the family video call next Sunday around 8.
+478. Cancel the taxi pickup reminder 30 minutes before airport departure.
+479. Delete the prayer break at sunset each day for the next week.
+480. Remove the hold for packing and checking documents before my visa appointment.
+481. Cancel the school project deadline reminder the previous evening at 7 PM.
+482. Delete the post-lunch walk each weekday.
+483. Remove the backup slot for presentation rehearsal.
+484. Cancel the launch celebration on Friday at 8 PM.
+485. Delete coffee w/ Neeraj tmr 10a @ Blue Tokai.
+486. Remove house-help payment reminder on 1st monthly 8am.
+487. Cancel annual health check nxt mth 22nd 9:20a in Health cal.
+488. Delete no meetings pls tomorrow 1-6 pm.
+489. Remove board mtg prep -1 day 5pm.
+490. Cancel iftar prep daily 5p for rest of this week.
+491. Delete call w/ mom Sun 9:05pm repeat weekly.
+492. Remove shift handoff Fri 23:30 to Sat 00:15 UTC.
+493. Cancel the dentist hold for the first open Tuesday next month at 4 PM.
+494. Delete the tentative parent visit on the weekend after next.
+495. Remove the reminder to book my return ticket 14 days before travel.
+496. Cancel the red-flag review every second Thursday at 6 PM until the release.
+497. Delete the public webinar next Wednesday at 7 PM on the Community calendar.
+498. Remove home renovation phase 1 for the first three days of July.
+499. Cancel lunch with my ex-colleagues on the last Friday of this month.
+500. Delete the block that says don't schedule over this next Thursday from 9 AM to noon.

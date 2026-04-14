@@ -1,0 +1,515 @@
+1. Move my meeting with Rahul from tomorrow at 10 AM to 11 AM.
+2. Reschedule the dentist appointment next Tuesday from 4 PM to 5 PM.
+3. Change lunch with Priya on Friday to 1:30 PM.
+4. Push my project review today from 6 PM to 7 PM.
+5. Rename Team Sync on Monday to Weekly Team Sync.
+6. Update my call with Ankit this evening to start at 7:30 PM.
+7. Change my mom's birthday event to be all-day.
+8. Shift my workout session tomorrow from 6 AM to 6:30 AM.
+9. Extend my deep work block tomorrow from 2 PM to 6 PM.
+10. Move coffee chat with Neha on Saturday from 11 AM to noon.
+11. Change Budget Planning on April 20 from 3 PM to 4 PM.
+12. Shorten tonight's coding session to 30 minutes.
+13. Rename Diwali holiday to Diwali Celebration.
+14. Move Pay electricity bill from month-end to the 28th.
+15. Reschedule my doctor follow-up two weeks from today from 5 PM to 4 PM.
+16. Update the call with the design team next Wednesday from noon to 1 PM.
+17. Reduce my travel block on May 12 so it ends at 4 PM instead of 6 PM.
+18. Change my meeting with my manager next month to 11 AM.
+19. Rename Quarterly Review to Q3 Quarterly Review.
+20. Move my haircut appointment on Sunday from 5:30 PM to 4 PM.
+21. Change yoga class to Tuesdays and Thursdays at 7 AM instead.
+22. Reschedule the parent-teacher meeting on March 15 to 2 PM.
+23. Rename Submit tax documents to File tax documents.
+24. Move tomorrow's brainstorming session with the product team to 5 PM.
+25. Change Interview with candidate on Thursday to 3 PM.
+26. Update my passport renewal reminder from the 10th to the 5th of next month.
+27. Extend Client Demo on Tuesday from one hour to 90 minutes.
+28. Move family dinner this Saturday from 8 PM to 8:30 PM.
+29. Change Buy groceries today from 7 PM to 6 PM.
+30. Reschedule the AI webinar next Thursday to 7 PM.
+31. Rename Hackathon this weekend to Internal Hackathon.
+32. Move my weekday standup from 10 AM to 10:15 AM.
+33. Change Call the bank tomorrow from 11:15 AM to noon.
+34. Move Apartment rent payment from the 1st to the 3rd every month.
+35. Rename Anniversary dinner to Anniversary Celebration Dinner.
+36. Reschedule my sales team meeting on Monday to 5 PM.
+37. Change Read for one hour every night to 30 minutes at 10 PM.
+38. Extend my focus block this afternoon by one hour.
+39. Move Pick up parcel tomorrow from 6:30 PM to 5:30 PM.
+40. Push next Monday's strategy meeting by 30 minutes.
+41. Change my visa interview reminder from 9 AM to 8 AM.
+42. Move my daily meditation session from 6:30 AM to 7 AM.
+43. Extend Prepare presentation on Wednesday until 10:30 PM.
+44. Change Lunch with college friends on April 25 to 1 PM.
+45. Rename Office Closed on December 25 to Christmas Holiday.
+46. Reschedule my recruiter call tomorrow morning from 9 AM to 9:30 AM.
+47. Move Review contracts next Tuesday from 5 PM to 4 PM.
+48. Change my Saturday music class from 4 PM to 5 PM.
+49. Reschedule Take car for service on June 3 to 9 AM.
+50. Push my mentor check-in this Friday from 7 PM to 8 PM.
+51. Shorten tomorrow's study block from 2 hours to 90 minutes.
+52. Change Plan vacation next Sunday to 3 PM.
+53. Move the product launch meeting on May 5 from 11 AM to 2 PM.
+54. Update Renew gym membership to the 30th of this month.
+55. Change my plant watering reminder from every three days to every two days.
+56. Extend Team Lunch on Friday until 2 PM.
+57. Rename Portfolio Review to Design Portfolio Review.
+58. Move Language Practice from every evening at 8:30 PM to 9 PM.
+59. Reschedule the school reunion on November 11 from 5 PM to 6 PM.
+60. Change Call grandma every Sunday from 9 AM to 10 AM.
+61. Move my physiotherapist appointment next Thursday from 3 PM to 4 PM.
+62. Push Submit assignment tonight from 11 PM to 11:30 PM.
+63. Change tomorrow's client demo watch from 4:45 PM to 5 PM.
+64. Shorten Home cleaning on Saturday so it ends at 11 AM.
+65. Move my credit card bill reminder from the 18th to the 20th every month.
+66. Reschedule the networking event next Wednesday from 7 PM to 6 PM.
+67. Change Practice guitar from Tuesday and Thursday to Monday and Wednesday.
+68. Move Meet landlord tomorrow from 5 PM to 6 PM.
+69. Update School fees payment on June 10 to 11 AM.
+70. Push my cousin catch-up next Sunday from 6 PM to 7 PM.
+71. Change my No meetings block to Friday morning instead of afternoon.
+72. Move Doctor annual checkup on October 14 from 2:30 PM to 1 PM.
+73. Reschedule my breakfast meeting on Tuesday from 8 AM to 8:30 AM.
+74. Change Prepare invoices this Friday from 3 PM to 2 PM.
+75. Move Call electrician tomorrow from 1 PM to 3 PM.
+76. Update Board Meeting next month from 11 AM to 9 AM.
+77. Rename MBA application deadline to MBA submission deadline.
+78. Move my workday lunch break from 1 PM to 12:30 PM.
+79. Reschedule Baby vaccination next Monday from 10:15 AM to 11 AM.
+80. Change Review resume tonight from 9:45 PM to 8 PM.
+81. Move Photography workshop this Saturday from 3 PM to 4 PM.
+82. Change Expense Review from the last Sunday to the last Saturday.
+83. Update the weekly report reminder from Friday at 5 PM to Thursday at 5 PM.
+84. Rename Parents anniversary to Mom and Dad anniversary.
+85. Move customer support call tomorrow from 12 PM to 2 PM.
+86. Reschedule Meet accountant on Thursday from 4:30 PM to 3:30 PM.
+87. Change Morning walk from 6 AM to 6:30 AM every day.
+88. Move Performance Review next month on the 22nd from 3 PM to 4 PM.
+89. Update Laptop repair pickup on Friday from 5:30 PM to 6 PM.
+90. Push Brainstorm app ideas tomorrow night from 10 PM to 9 PM.
+91. Move the farewell dinner next Saturday from 8:30 PM to 9 PM.
+92. Rename Team Offsite on June 21 to Team Offsite Day.
+93. Reschedule Review legal documents on Monday from 1:30 PM to 2 PM.
+94. Move the insurance agent reminder next Wednesday from 2 PM to 1 PM.
+95. Change Exam preparation every evening this week from 7 PM to 8 PM.
+96. Extend the Volunteer event on Sunday until 3 PM.
+97. Push Visit dentist three months from today from 11 AM to noon.
+98. Rename Launch campaign on April 30 to Launch marketing campaign.
+99. Change Family video call every Saturday from 9 PM to 8:30 PM.
+100. Move the surprise party planning session on Thursday from 6 PM to 7 PM.
+101. Move my 3 PM meeting tomorrow to 4.
+102. Push that dentist thing by half an hour.
+103. Can you slide lunch with Priya a bit later on Friday?
+104. Start my project review one hour earlier today.
+105. Make Team Sync a recurring weekly meeting instead of one-time.
+106. Turn tonight's coding session into an all-day reminder instead.
+107. Move the Diwali event to the actual holiday date.
+108. Shift the electricity bill reminder to the day before month-end.
+109. Can you make my doctor follow-up 45 minutes longer?
+110. Change the design team call to right after lunch next Wednesday.
+111. Move my travel block so it starts at 10 AM instead of 8 AM.
+112. Rename my manager meeting to Skip-level 1:1.
+113. Push Quarterly Review to the first week of July.
+114. Make my haircut appointment private.
+115. Turn yoga class into a recurring event every weekday.
+116. Add a reminder to the parent-teacher meeting 30 minutes before.
+117. Change Submit tax documents from timed to all-day.
+118. Move tomorrow's brainstorming session to whichever slot is open after 5 PM.
+119. Shorten the candidate interview by 15 minutes.
+120. Set my passport renewal reminder to repeat every year.
+121. Move Client Demo from Tuesday to Wednesday, same time.
+122. Add Olive Bistro as the location for family dinner this Saturday.
+123. Convert Buy groceries into a reminder instead of a timed event.
+124. Mark the AI webinar as public.
+125. Move Hackathon to next weekend.
+126. Change my weekday standup to weekdays only until the end of this month.
+127. Rename Call the bank to Follow up with bank manager.
+128. Move Apartment rent payment to my Bills calendar.
+129. Add a note saying reserve corner table to Anniversary dinner.
+130. Turn the sales team meeting into a Zoom call.
+131. Make my nightly reading block start 15 minutes later.
+132. Push today's focus block to after my lunch meeting.
+133. Move Pick up parcel to tomorrow morning.
+134. Extend the strategy meeting by another 30 minutes.
+135. Add a one-hour reminder to the visa interview.
+136. Change my meditation session to weekdays only.
+137. Move Prepare presentation from Wednesday night to Thursday night.
+138. Change Lunch with college friends to dinner instead.
+139. Turn Office Closed into a company-wide public event.
+140. Push the recruiter call to the afternoon.
+141. Rename Review contracts to Vendor contract review.
+142. Add Community Center as the location for my music class.
+143. Move Take car for service to the following Friday.
+144. Add a Google Meet note to my mentor check-in.
+145. Turn tomorrow's study block into a recurring block for the whole week.
+146. Move Plan vacation to next month, same day of week.
+147. Add attendees pm@example.com and ceo@example.com to the product launch meeting.
+148. Make Renew gym membership recur every year.
+149. Change the plant watering reminder to weekdays only.
+150. Push Team Lunch by 45 minutes.
+151. Move the portfolio review from Monday evening to Tuesday morning.
+152. Add the note practice speaking points to Language Practice.
+153. Make the school reunion an all-day event.
+154. Change Call grandma to every other Sunday.
+155. Move my physiotherapist appointment to the Health calendar.
+156. Replace Submit assignment with Submit final assignment.
+157. Set the client demo watch to private.
+158. Turn Home cleaning into a recurring monthly event.
+159. Change the credit card bill reminder to happen two days before the due date.
+160. Move the networking event to my Work calendar.
+161. Add beginner exercises to my guitar practice description.
+162. Shift Meet landlord to next week, same weekday.
+163. Mark School fees payment as important in the description.
+164. Turn my cousin catch-up into a recurring monthly call.
+165. Move my No meetings block to the Shared calendar.
+166. Add Sunrise Clinic as the location for the annual checkup.
+167. Change the breakfast meeting to breakfast and coffee meeting.
+168. Push Prepare invoices to end of day Friday.
+169. Turn Call electrician into a reminder with a 15-minute alert.
+170. Move Board Meeting to the Leadership calendar.
+171. Change the MBA deadline from 5 PM to midnight.
+172. Make lunch break 45 minutes instead of one hour.
+173. Push Baby vaccination by one week.
+174. Move Review resume to tomorrow evening.
+175. Add downtown studio as the location for Photography workshop.
+176. Turn Expense Review into a recurring finance review with a description.
+177. Change the weekly report reminder to every Thursday and Friday.
+178. Make Parents anniversary an all-day recurring yearly event.
+179. Push the customer support call until after lunch.
+180. Move Meet accountant to the Finance calendar.
+181. Change Morning walk to 30 minutes every day.
+182. Turn Performance Review into a private event.
+183. Add the repair shop address to Laptop repair pickup.
+184. Rename Brainstorm app ideas to Brainstorm startup ideas.
+185. Make the farewell dinner an all-day reminder so I don't miss it.
+186. Move Team Offsite from all-day to 9 AM through 5 PM.
+187. Add a checklist note to Review legal documents.
+188. Push the insurance reminder to the day before instead.
+189. Change Exam preparation from every evening to every morning.
+190. Move the Volunteer event from Sunday to Saturday.
+191. Add a 10-minute reminder to Visit dentist.
+192. Change Launch campaign into a recurring monthly review event.
+193. Make Family video call private.
+194. Extend the surprise party planning session until 8:30 PM.
+195. Move my call with Tokyo from 9 AM JST to 10 AM JST.
+196. Change my New York team meeting from 8 AM EST to 9 AM EST.
+197. Move the Toronto catch-up to 6 PM Eastern instead of 7 PM.
+198. Push the webinar on 14 May from 18:00 CET to 19:00 CET.
+199. Shift my Singapore travel block to start an hour earlier.
+200. Extend the London office prep call by 15 minutes.
+201. Move my Sydney recurring sync from 4 PM AEST to 3 PM AEST.
+202. Change tonight's deployment window so it ends at 2 AM.
+203. Turn my overnight train travel block into an all-day travel entry.
+204. Move the red-eye flight reminder to 3 hours before departure.
+205. Extend my Japan trip all-day event by two more days.
+206. Push the month-end call at 11:45 PM to 11 PM instead.
+207. Change the monthly close meeting from UTC to my local time.
+208. Rename the breakfast sync with Berlin to Berlin handoff.
+209. Move the Dubai client call to next week, same time.
+210. Update Ramadan Iftar so it only repeats for the next 5 days.
+211. Change the webinar reminder from 07:00 UTC to 06:30 UTC.
+212. Extend the release freeze window until 5 PM Monday.
+213. Move the Mexico City handover from Thursday to Friday.
+214. Add Boston Clinic as the location for my doctor appointment in Boston.
+215. Change the California check-in to every other Tuesday.
+216. Move my travel hold for crossing time zones to the weekend before.
+217. Shift Design Crit on the Work calendar from 1 PM to 2 PM.
+218. Change Parents Day Lunch on my Personal calendar to brunch at 11 AM.
+219. Move the school reunion in the Family calendar to July 13.
+220. Add the client site address to the Sales calendar review.
+221. Change the dentist reminder in my Health calendar from 9 AM to 8 AM.
+222. Move the code review block on the Engineering calendar from 5 PM to 4 PM.
+223. Turn date night in the Shared calendar into a recurring monthly event.
+224. Push the rent payment reminder in my Bills calendar to the 28th.
+225. Change soccer practice in the Kids calendar from Thursday to Friday.
+226. Move the Leadership calendar board meeting from June 1 to June 8.
+227. Rename my private note-taking block to Deep notes.
+228. Change the public webinar on the Community calendar to private.
+229. Extend annual leave on the Work calendar by one more day.
+230. Move the visa appointment on the Travel calendar to 10 AM.
+231. Change the payroll reminder in the Finance calendar to the 24th.
+232. Push lunch with cousins on the Personal calendar to 1:15 PM.
+233. Shorten the interview panel on the Hiring calendar so it ends at 4 PM.
+234. Move the house inspection on the Home calendar to the afternoon.
+235. Extend the volunteer shift on the NGO calendar by 30 minutes.
+236. Change the pharmacy pickup on the Errands calendar to tomorrow.
+237. Update Kickoff tomorrow at 11 AM to include Ben and Rosa.
+238. Move Friday's client demo with dev@example.com to 4 PM.
+239. Change Performance Review on Monday to private with a 15-minute reminder.
+240. Add Olive Bistro as the location for Thursday's lunch meeting.
+241. Push my check-up next Tuesday at 5 PM to next Wednesday at the same time.
+242. Make tomorrow's project sync visible to everyone instead of only me.
+243. Change my recurring Wednesday 1:1 from 2 PM to 2:30 PM.
+244. Move Interview Loop on Friday from 10 AM to 9 AM.
+245. Add parking basement 2 to Parents Meeting on April 28.
+246. Rename tomorrow's brainstorming session to Roadmap brainstorm.
+247. Change Renewal Negotiation next Monday from 5 PM to 4 PM and keep both reminders.
+248. Move the doctor's appointment on June 5 from Sunrise Clinic to Green Care Hospital.
+249. Change Monthly Finance Review to the third Friday instead of the last Friday.
+250. Shift Team Lunch next Thursday from Spice Route to Olive Garden.
+251. Turn Board Prep on Sunday into an all-day private block.
+252. Change weekly yoga class from Tuesday to Thursday at 6:30 AM.
+253. Move my nightly reading block from 9:30 PM to 9 PM.
+254. Extend Release Planning this Friday to 3:30 PM.
+255. Add the note show updated payment flow to next Wednesday's product demo.
+256. Shorten Wedding Shopping on Saturday by one hour.
+257. Push my architect follow-up on Monday from 5:15 PM to 6 PM.
+258. Move Vaccination Appointment on June 14 to June 21.
+259. Change the networking breakfast from downtown to Central Cafe.
+260. Rename tomorrow's Podcast Recording to Podcast Recording with Maya.
+261. Add portfolio samples to the mentoring session description.
+262. Move my hair appointment on April 19 from 5 PM to 3 PM.
+263. Turn the silent retreat on May 1 into a public all-day event.
+264. Extend Housewarming Party on June 22 until midnight.
+265. Change Sprint Retro from every other Friday to every Friday.
+266. Move Payroll Approval from the 28th to the 27th of every month.
+267. Move Ship v2 tomorrow morning to this afternoon.
+268. Change Vendor Review from next next Friday to the Friday after that.
+269. Push something with Priya from after lunch tomorrow to evening.
+270. Move my prep block from before the board meeting to the day before.
+271. Change my catch-up with the team from half past six to seven tonight.
+272. Push that Tuesday-after-next reminder from 11 to noon.
+273. Make Thursday's block from quarter to four start at 4 instead.
+274. Change Friday's noon-ish meeting to exactly 12:15 PM.
+275. Extend tonight's late-night coding sprint until 2 AM.
+276. Move the breakfast meeting on the day after payday to lunchtime.
+277. Change my annual physical in mid-June to late June.
+278. Push the month-end reminder to two days before month-end.
+279. Make tomorrow's study session 4 hours instead of 3.
+280. Change the alternate Monday recurring event to every Monday.
+281. Move the visa expiration reminder from 30 days before to 60 days before.
+282. Rename Submit reimbursement before EOD Friday to Submit travel reimbursement.
+283. Move the post-New-Year planning meeting to the second working day instead.
+284. Shift my travel block for the weekend after next to the following weekend.
+285. Change gym from weekdays except Wednesday to Monday, Wednesday, and Friday.
+286. Move my son's PTM next month from the second Saturday to the first Saturday.
+287. Extend office hours every Tuesday through the end of the quarter to 5 PM.
+288. Move the recurring call for the next two weeks from 9:15 AM to 9 AM.
+289. Change Thursday's exception meeting back to the usual Friday slot.
+290. Push the invoice reminder from 4 PM to 3 PM.
+291. Change monthly book club from the third Wednesday to the third Thursday.
+292. Extend the standup through July 31 instead of June 30.
+293. Move Guitar Class from 5 PM to 6 PM on the first and third Saturdays.
+294. Change the vitamins reminder from 8 AM to 7 AM.
+295. Move date night from the second Friday to the second Saturday.
+296. Push sprint review by one week.
+297. Change the first-week-of-next-month weekday call from 11 AM to 10 AM.
+298. Move lunch with mom from the final Sunday to the first Sunday.
+299. Extend the team sync until the end of the year.
+300. Change the daily focus block from 7 AM to 6:30 AM.
+301. Move the project checkpoint from the 1st and 15th to the 5th and 20th.
+302. Push weekly therapy by 30 minutes for the next 8 weeks.
+303. Change my study reminder from every other day to every day.
+304. Move the quarterly tax reminder to one week before quarter end.
+305. Change the recurring all-hands from the first Monday to the second Monday.
+306. Update Flight to Delhi so it ends at 1:30 AM instead of 1 AM.
+307. Shorten tonight's sleep block by one hour.
+308. Push the maintenance window from Sunday night to Monday night.
+309. Extend New Year's Eve party until 2 AM.
+310. Change my graveyard shift on Wednesday so it starts at 9 PM.
+311. Move the overnight bus journey up by 30 minutes.
+312. Push the deployment freeze start from midnight to 1 AM.
+313. Extend the moonlight trek by one hour.
+314. Make today's late support handoff start 15 minutes earlier.
+315. Turn the meditation retreat into timed events instead of all-day.
+316. Rename Doctor stuff next Monday to Specialist visit.
+317. Fix the event named catchup??? tomorrow at 4 pm to Catch-up with team.
+318. Change fam dinner on Saturday evening to Sunday evening.
+319. Move meetin with harish tmrw 10 am to 11 am.
+320. Push dnt appt nxt tue 4p to 5p.
+321. Make mom birthday reminder yearly and all-day.
+322. Move lunch wid priya fri 1 pm at cafe to 12:30.
+323. Change wrkout daily 6a except weekends to 6:15a.
+324. Shift renew license b4 month end to one week earlier.
+325. Move no-call time on my cal 2moro 2-5 to 3-6.
+326. Update the landlord meeting reminder on Thursday from 5 to 6.
+327. Turn my maybe meeting with legal next week into a confirmed event on Tuesday at 4 PM.
+328. Rename fix life admin this Sunday afternoon to Personal admin catch-up.
+329. Push chaos cleanup tonight to tomorrow evening.
+330. Extend my breathing room between 1 and 2 tomorrow to 2:30.
+331. Move my free-on-Wednesday-morning deep work block to Thursday morning.
+332. Add a reminder to the private hold called school stuff next Monday.
+333. Shift taxes near the filing deadline to one week earlier.
+334. Move the tentative Jaipur trip in early July to late July.
+335. Change my monthly rent reminder from night before to two nights before.
+336. Push the HR call after my 3 PM interview to after my 4 PM call instead.
+337. Make the break between my two client meetings on Friday 45 minutes.
+338. Move the prep session before Monday's dentist appointment to 30 minutes before.
+339. Shift the follow-up review from three days after kickoff to one week after.
+340. Extend the one-hour buffer after the board meeting to 90 minutes.
+341. Move the notes reminder from 15 minutes after the team sync to right after it ends.
+342. Push packing the night before my flight to two nights before.
+343. Change my marathon cool-down block from Sunday evening to Monday morning.
+344. Move the anniversary gift reminder from one week before to two weeks before.
+345. Turn the recurring prep slot before every monthly review into a 2-hour block.
+346. Shift the airport leave reminder from 4 hours before to 3 hours before.
+347. Push tomorrow's post-demo debrief by 20 minutes.
+348. Move the buffer before travel from 6 PM to 5 PM Friday.
+349. Change my aftercare block after surgery to all-day the next day.
+350. Shift the charge-devices reminder from the night before to the morning of the offsite.
+351. Move the commute hold before tomorrow's doctor visit from 1 hour before to 90 minutes before.
+352. Push the celebration dinner after the results are announced to the next evening.
+353. Change my recovery time after the exam from all day to just the afternoon.
+354. Move the webinar dry run from one day before to two days before.
+355. Extend the settling time before my interview to 45 minutes.
+356. Change the 1-hour reminder to my parent-teacher meeting to a 2-hour reminder.
+357. Reduce my dentist reminders tomorrow from three reminders to just 30 and 10 minutes.
+358. Change my private legal call on Monday from 9 AM to 8:30 AM.
+359. Move the weekly staff meeting from Tuesday 10 AM to Tuesday 9:30 AM.
+360. Add a 30-minute reminder to the birthday dinner on Saturday.
+361. Push the annual tax filing reminder from March 31 to March 25.
+362. Change my medicine reminder from 8 AM and 8 PM to 9 AM and 9 PM.
+363. Turn tomorrow's focus block back on with a 15-minute reminder.
+364. Move the workshop next Thursday from 3 PM to 2 PM and keep the previous-day reminder.
+365. Change the bill payment event from the 5th to the 4th every month.
+366. Shift Architecture Review tomorrow from noon to 11 AM.
+367. Move my casual catch-up with Joe this Friday from 4:10 PM to 4:30 PM.
+368. Push my salon visit next month from 5:25 PM to 4:45 PM.
+369. Change Parent Call every Sunday night from 9:05 PM to 8:45 PM.
+370. Extend the rehearsal on Wednesday until 8 PM.
+371. Move tomorrow's quick sync from 08:05 to 08:30.
+372. Change the project check-in on April 1 from 1:01 PM to 1 PM.
+373. Shorten my weekday meal break to 20 minutes.
+374. Move next Monday's portfolio review from 3:05 PM to 4 PM.
+375. Push tomorrow's blood test from 07:05 to 07:30.
+376. Change leap day brunch on February 29 from 11 AM to noon.
+377. Move tax prep from the last Sunday of February to the last Saturday.
+378. Turn the 31st reminder into the last day of the month reminder.
+379. Extend year-end reflection on December 31 until 7 PM.
+380. Move next-quarter planning from the first day to the second day of the quarter.
+381. Shift the daylight saving check call to the morning after instead.
+382. Rename fiscal year close to FY close.
+383. Move my February 28 subscription review reminder to February 20.
+384. Change the quarterly tax estimate review from 1 PM to 11 AM.
+385. Rename Practica oral tomorrow at 5 PM to Conversacion oral.
+386. Move Eid lunch from all-day to 1 PM to 3 PM.
+387. Add temple address to Sunday's puja at 7 AM.
+388. Push Christmas Eve dinner from 8 PM to 7 PM.
+389. Turn Ganesh Visarjan into a public all-day event.
+390. Move Tamil class from Saturday at 10 AM to Saturday at 11 AM.
+391. Change my Friday prayer reminder from 1:15 PM to 1 PM.
+392. Push Lunar New Year dinner by one day.
+393. Move Ramadan meal prep from 5 PM to 4 PM each evening.
+394. Change Easter choir practice from 6 AM to 7 AM.
+395. Rename AI/ML roadmap review next Tuesday to AI roadmap review.
+396. Move Q2 OKR reset plus budget alignment from Monday 11 AM to Monday 2 PM.
+397. Push App Store rejection postmortem tomorrow from 5 PM to 6 PM.
+398. Rename Fix PROD login issue tonight to Production login hotfix.
+399. Change Resume pass no. 2 this Sunday from 4 PM to 3 PM.
+400. Move API v2 / partner sync on Thursday to Friday, same time.
+401. Push 1:1 with CTO from Friday 6 PM to Friday 5 PM.
+402. Change UX crit and handoff on Wednesday from 12:15 PM to 1 PM.
+403. Move Send FY26 numbers next Monday from 9:10 AM to 8:30 AM.
+404. Push Founders' dinner on June 2 from 7 PM to 8 PM.
+405. Move my kid's school play next Thursday from 5 PM to 6 PM.
+406. Change dog grooming on Saturday from 2 PM to 3 PM.
+407. Push the vet follow-up two weeks from now from 11 AM to 1 PM.
+408. Move grandma meal this Sunday from 1 PM to noon.
+409. Shift school bus fee reminder from the 7th to the 5th of each month.
+410. Move date night every third Saturday from 8:30 PM to 8 PM.
+411. Change Arjun's football practice from Wednesday at 5 PM to Wednesday at 6 PM.
+412. Push the family budget review from the first Sunday to the second Sunday.
+413. Move my prenatal checkup on June 21 from 9 AM to 10 AM.
+414. Change parent pickup duty tomorrow from 2:30 PM to 2 PM.
+415. Turn my tentative investor coffee next Tuesday at 10 AM into a confirmed Work calendar event.
+416. Move the maybe-doctor visit on Friday afternoon to Saturday morning.
+417. Rename hold for builder visit next week to Builder site inspection.
+418. Push the possible client dinner on Thursday night to next Thursday.
+419. Change my soft block for personal admin tomorrow morning to tomorrow afternoon.
+420. Move the hold titled if needed for revisions tonight at 9 PM to 10 PM.
+421. Turn TBD vendor call next Wednesday at 4 PM into a confirmed Zoom call.
+422. Extend my option block on Friday from 3 to 6 PM.
+423. Move reserve time for spillover work tomorrow to the morning.
+424. Push the fallback interview slot for Monday from 11 AM to 1 PM.
+425. Rename remind me to breathe when the deadline hits tomorrow at 5 to Deadline checkpoint.
+426. Move Please don't let me miss this demo on Friday at 2 PM to Friday at 1:30 PM.
+427. Change Important adulting on Sunday at noon to Saturday at noon.
+428. Push my tiny meeting with my future self tonight at 11:59 PM to tomorrow 8 AM.
+429. Move the panic-prep hold before Monday's presentation to Sunday evening.
+430. Change that bill I always forget reminder from the 12th to the 10th.
+431. Push stop procrastinating tomorrow at 8 AM to 8:30 AM.
+432. Extend me-time on Saturday evening until 10 PM.
+433. Rename not work tonight from 6 PM to 9 PM to Offline evening.
+434. Move my to-be-determined errands block from the weekend to Sunday afternoon.
+435. Change the recurring weekday standup for the next 6 weeks from 9:30 AM to 9 AM.
+436. Move the lunch-and-learn on the second Wednesday from noon to 1 PM.
+437. Push the payroll review reminder from the first weekday after the 25th to the second weekday after.
+438. Extend my board prep block before quarterly board meetings to 3 hours.
+439. Move customer follow-up from the third business day to the fourth business day.
+440. Change my recurring night class from Monday and Thursday to Tuesday and Thursday.
+441. Move the all-day travel hold from every Friday in August to every Monday in August.
+442. Push the recurring clinic visit every 6 weeks from 3 PM to 4 PM.
+443. Shift deep work next week from 8 AM to 9 AM except Thursday.
+444. Move the rehearsal on the two days before the concert to 7 PM.
+445. Add recruiter@example.com to Final interview tomorrow at 9 AM.
+446. Change the shut down my laptop reminder from 5:45 PM to 6 PM.
+447. Move the billing audit on the final Friday of each quarter from 11 AM to 2 PM.
+448. Rename Medical Leave next Monday to Sick Leave.
+449. Push the monthly family call on the first Sunday from 8 PM to 7 PM.
+450. Change the deployment window every other Wednesday from 11 PM to 10 PM.
+451. Shorten the school holiday all-day event so it only covers the first 3 days of June.
+452. Move the prayer meeting for the next 9 days from 6 AM to 5:30 AM.
+453. Change the exam reminder from 48 hours before to 72 hours before.
+454. Rename my work anniversary reminder to Work anniversary milestone.
+455. Move the panel interview on the Hiring calendar next Friday from 1 PM to 2 PM.
+456. Change gardening every Saturday morning from 7:30 AM to 8 AM.
+457. Push the personal finance review on the last day of the month to the day before.
+458. Move the move-out checklist from the evening before my lease ends to two days before.
+459. Change the bike service reminder from six months out to five months out.
+460. Move my office commute block from 8 AM to 7:30 AM every Tuesday and Thursday.
+461. Rename the Community calendar workshop on June 9 to Neighborhood workshop.
+462. Change my niece birthday reminder on August 2 to August 3.
+463. Push the medication refill reminder from every 28 days to every 30 days.
+464. Move my salary negotiation prep block from two days before to three days before the 1:1.
+465. Rename Shift left review tomorrow at 10:40 AM to Early quality review.
+466. Change catchup with DevOps at 16:20 Thursday to 15:50 Thursday.
+467. Move hydrate every Mon Wed Fri at 05:50 to 06:10.
+468. Shift account reconciliation on 30/06 at 14:00 to 01/07 at 10:00.
+469. Extend tomorrow's doc review block from 13:10 to 15:30.
+470. Move PTM for Riya on 07/08 from 11:30 AM to 12 PM.
+471. Rename renew DL on 5 Sep at 10 to Renew driver's license.
+472. Change my CAB review on 2026-09-14 18:00 to 17:00.
+473. Push my private hold reset on New Year's Eve from 23:00 to 22:30.
+474. Move submit insurance proof yearly reminder from 18/11 to 01/11.
+475. Change the short sync with Ken before release to 30 minutes earlier.
+476. Extend my quiet hour after lunch every day this week to 90 minutes.
+477. Move the family video call next Sunday around 8 to exactly 8:30 PM.
+478. Shift the taxi pickup reminder from 30 minutes before to 45 minutes before departure.
+479. Change the sunset prayer break each day next week to 20 minutes later.
+480. Move the packing and documents hold before my visa appointment to two nights before.
+481. Push the school project deadline reminder from previous evening to two evenings before.
+482. Extend the post-lunch walk each weekday from 20 minutes to 30 minutes.
+483. Move the backup presentation rehearsal slot to Friday evening instead.
+484. Change the launch celebration on Friday at 8 PM to Saturday at 8 PM.
+485. Move coffee w/ Neeraj tmr 10a @ Blue Tokai to 11a.
+486. Shift house-help payment reminder on 1st monthly 8am to 7am.
+487. Push annual health check nxt mth 22nd 9:20a to 10:20a.
+488. Change no meetings pls tomorrow 1-6 pm to 2-6 pm.
+489. Move board mtg prep -1 day 5pm to -2 days 5pm.
+490. Shift iftar prep daily 5p for rest of this week to 4:30p.
+491. Change call w/ mom Sun 9:05pm repeat weekly to Sun 8:35pm.
+492. Move shift handoff Fri 23:30 to Sat 00:15 UTC to start at 23:00 UTC.
+493. Push the dentist hold for the first open Tuesday next month from 4 PM to 5 PM.
+494. Change the tentative parent visit on the weekend after next to the following weekend.
+495. Move the return ticket reminder from 14 days before travel to 21 days before.
+496. Push the red-flag review every second Thursday from 6 PM to 5 PM.
+497. Change the public webinar next Wednesday at 7 PM to the Work calendar.
+498. Extend home renovation phase 1 in early July by two more days.
+499. Move lunch with my ex-colleagues on the last Friday from 1 PM to noon.
+500. Change don't schedule over this block next Thursday from 9 AM to 10 AM and end it at 1 PM.
+501. Reschedule Python Anaconda to 4th May but keep the same time.
+502. Move my 3 PM meeting to next Friday, keep the same time.
+503. Shift the dentist appointment to next Tuesday at the same time.
+504. Reschedule team sync to next Monday, keep the original time.
+505. Move my morning workout to Friday same time.
+506. Change the date of my doctor appointment to the 20th, keep same time.
+507. Push the team lunch to next Wednesday at the same time as today.
+508. Reschedule my 1-on-1 with Sarah to next Thursday, same time please.
+509. Move the client call to Monday but keep the time as is.
+510. Change the date of project review to April 30, same time.
+511. Shift the board meeting to May 1st, same time slot.
+512. Move my interview to Wednesday, keep the existing time.
+513. Reschedule the workshop to next week, preserve the original start and end time.
+514. Can you move the standup to Friday? Keep it the same time.
+515. Move the all-hands meeting to next Thursday at the same hour.

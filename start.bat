@@ -1,46 +1,56 @@
 @echo off
 setlocal
 
-set ROOT=%~dp0
-set BACKEND=%ROOT%backend
-set FRONTEND=%ROOT%frontend
+set "ROOT=%~dp0"
+set "BACKEND=%ROOT%backend"
+set "FRONTEND=%ROOT%frontend"
 
 echo Starting Calendar Assistant...
 echo.
 
-REM Kill any existing uvicorn/node processes on our ports to avoid conflicts
 echo Cleaning up old processes...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000"') do taskkill /PID %%a /F >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5173"') do taskkill /PID %%a /F >nul 2>&1
-timeout /t 1 /nobreak >nul
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000 .*LISTENING"') do taskkill /PID %%a /F >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5173 .*LISTENING"') do taskkill /PID %%a /F >nul 2>&1
+timeout /t 2 /nobreak >nul
 
-REM Clear Python bytecode cache
+echo Checking Ollama server...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -Uri 'http://127.0.0.1:11434/api/tags' -UseBasicParsing > $null; exit 0 } catch { exit 1 }"
+if errorlevel 1 (
+    echo Starting Ollama window...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:ComSpec -WorkingDirectory $env:ROOT -ArgumentList @('/k', 'call', ('\"' + $env:ROOT + 'start_ollama.bat\"'))"
+    timeout /t 4 /nobreak >nul
+) else (
+    echo Ollama is already running.
+)
+
+echo Clearing Python cache...
 for /d /r "%BACKEND%" %%d in (__pycache__) do (
     if exist "%%d" rd /s /q "%%d" >nul 2>&1
 )
 
-REM Start backend in a new persistent terminal window (run from project root so backend package resolves)
-start "Calendar Backend" cmd /k "cd /d "%ROOT%" && backend\venv\Scripts\activate && uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
+echo Starting backend window...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:ComSpec -WorkingDirectory $env:ROOT -ArgumentList @('/k', 'call', ('\"' + $env:ROOT + 'start_backend.bat\"'))"
 
-REM Wait for backend to be ready
 echo Waiting for backend to start...
-timeout /t 5 /nobreak >nul
+timeout /t 4 /nobreak >nul
 
-REM Start frontend in a new persistent terminal window
-start "Calendar Frontend" cmd /k "cd /d "%FRONTEND%" && npm run dev"
+echo Starting frontend window...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:ComSpec -WorkingDirectory $env:FRONTEND -ArgumentList @('/k', 'call', ('\"' + $env:ROOT + 'start_frontend.bat\"'))"
 
-REM Wait for frontend to be ready
 echo Waiting for frontend to start...
-timeout /t 5 /nobreak >nul
+timeout /t 4 /nobreak >nul
 
-REM Open browser
-echo Opening browser...
-start http://localhost:5173
+echo Opening app in browser...
+start "" "http://localhost:5173"
 
 echo.
-echo Both servers are running.
-echo   Backend:  http://localhost:8000
-echo   Frontend: http://localhost:5173
+echo Both servers were launched.
+echo Ollama:   http://127.0.0.1:11434
+echo Backend:  http://localhost:8000
+echo Frontend: http://localhost:5173
 echo.
-echo Close the two terminal windows to stop the servers.
+echo If something fails, check the two opened terminal windows.
+echo Close them to stop the servers.
+
+pause
 endlocal

@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
 import EventCard from './EventCard'
 
 const mockEvent = {
@@ -28,5 +28,21 @@ describe('EventCard', () => {
     const noLocation = { ...mockEvent, location: '' }
     render(<EventCard event={noLocation} calendarColor="#4285F4" />)
     expect(screen.queryByText('Zoom')).not.toBeInTheDocument()
+  })
+
+  it('calls manual action handlers', () => {
+    const onView = vi.fn()
+    const onEdit = vi.fn()
+    const onDelete = vi.fn()
+
+    render(<EventCard event={mockEvent} calendarColor="#4285F4" onView={onView} onEdit={onEdit} onDelete={onDelete} />)
+
+    fireEvent.click(screen.getByText('View'))
+    fireEvent.click(screen.getByText('Edit'))
+    fireEvent.click(screen.getByText('Delete'))
+
+    expect(onView).toHaveBeenCalledWith(mockEvent)
+    expect(onEdit).toHaveBeenCalledWith(mockEvent)
+    expect(onDelete).toHaveBeenCalledWith(mockEvent)
   })
 })

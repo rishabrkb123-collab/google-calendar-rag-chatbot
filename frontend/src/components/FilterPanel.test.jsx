@@ -34,4 +34,18 @@ describe('FilterPanel', () => {
     fireEvent.click(screen.getByText('Today'))
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ quickFilter: 'today' }))
   })
+
+  it('clears quick filter when a custom date is selected', () => {
+    const onChange = vi.fn()
+    render(
+      <FilterPanel
+        calendars={mockCalendars}
+        filters={{ ...defaultFilters, quickFilter: 'all' }}
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-04-01' } })
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ fromDate: '2026-04-01', quickFilter: '' }))
+  })
 })

@@ -11,7 +11,7 @@ function formatEventTime(event) {
   return `${format(start, 'MMM d, yyyy')} · ${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}`
 }
 
-export default function EventCard({ event, calendarColor = '#4285F4', index = 0 }) {
+export default function EventCard({ event, calendarColor = '#4285F4', index = 0, onView, onEdit, onDelete }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -43,6 +43,17 @@ export default function EventCard({ event, calendarColor = '#4285F4', index = 0 
           {event.description && (
             <p className="text-gray-600 text-xs mt-1.5 line-clamp-2">{event.description}</p>
           )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button onClick={() => onView?.(event)} className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500 hover:text-white">
+              View
+            </button>
+            <button onClick={() => onEdit?.(event)} className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-200 hover:bg-blue-500/20">
+              Edit
+            </button>
+            <button onClick={() => onDelete?.(event)} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs text-red-200 hover:bg-red-500/20">
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>

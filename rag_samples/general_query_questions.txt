@@ -1,0 +1,515 @@
+1. What events do I have today?
+2. What is on my calendar tomorrow?
+3. What do I have this Monday?
+4. Show me all my events for this week.
+5. List out all the events on my calendar.
+6. What meetings do I have this afternoon?
+7. What is my first event today?
+8. What is my last event today?
+9. Do I have anything scheduled tonight?
+10. What do I have going on this weekend?
+11. Show me everything on my calendar for next week.
+12. What events are on Friday?
+13. What appointments do I have tomorrow morning?
+14. What is scheduled for this evening?
+15. Do I have any events right now?
+16. What is my next event?
+17. What comes after my next meeting?
+18. Show me my calendar for the rest of today.
+19. What do I have after lunch today?
+20. What is on my schedule before noon?
+21. What am I doing this morning?
+22. What do I have between 2 PM and 5 PM today?
+23. Show me everything from 9 AM to noon tomorrow.
+24. What events do I have after 6 PM today?
+25. What is on my calendar after 3 PM on Thursday?
+26. Do I have any calls tonight?
+27. What meetings are scheduled for early tomorrow morning?
+28. Show me my day in order.
+29. Can you list today's events chronologically?
+30. What is booked on my calendar right now?
+31. What does my Monday look like?
+32. What does my Tuesday look like?
+33. What does my Wednesday look like?
+34. What does my Thursday look like?
+35. What does my Friday look like?
+36. What do I have on Saturday?
+37. What do I have on Sunday?
+38. Show me all events for the next 24 hours.
+39. What is on my calendar in the next 48 hours?
+40. What do I have in the next 7 days?
+41. Show me all events this month.
+42. What is on my calendar next month?
+43. List all my events for this quarter.
+44. What do I have scheduled this year?
+45. Show me the events on April 18.
+46. What is on my calendar on June 6?
+47. What do I have planned for the 1st of next month?
+48. Show me everything on the last day of this month.
+49. Do I have anything on the first Monday of next month?
+50. What is scheduled for the second Tuesday of this month?
+51. Show me my events for the third week of this month.
+52. What do I have on the last Friday of next month?
+53. What is on my calendar during the first week of next month?
+54. Show me events from Monday through Wednesday.
+55. What do I have between Friday and Sunday?
+56. List my events from the 10th to the 20th of this month.
+57. Show me everything from next Tuesday to next Friday.
+58. What is on my calendar for the rest of the week?
+59. What do I have left this month?
+60. Show me everything scheduled after today.
+61. How many events do I have today?
+62. How many meetings do I have tomorrow?
+63. How many events are on my calendar this week?
+64. How many appointments do I have next week?
+65. How many events do I have this month?
+66. How many meetings are scheduled for next month?
+67. How many events do I have this year?
+68. Count all my events for today.
+69. Count how many meetings I have this afternoon.
+70. How many calls do I have this evening?
+71. How many events are scheduled on Friday?
+72. How many things do I have on Monday?
+73. How many all-day events do I have this week?
+74. How many recurring events are on my calendar?
+75. How many events do I have before noon today?
+76. How many events do I have after 5 PM today?
+77. How many events are in the next 7 days?
+78. How many appointments are coming up in the next 30 days?
+79. Count my events between April 1 and April 30.
+80. How many meetings do I have in June?
+81. How many personal events do I have this weekend?
+82. How many work events are on my calendar tomorrow?
+83. How many events are booked on the 15th?
+84. Count the events I have on the first week of next month.
+85. How many events do I have on weekdays this week?
+86. How many events are scheduled on weekends this month?
+87. Count my calendar entries for the last 10 days of this month.
+88. How many time-blocked events do I have today?
+89. How many events overlap with lunch time this week?
+90. How many meetings are longer than one hour this month?
+91. Show me only my meetings today.
+92. Show me only my appointments for this week.
+93. List all calls on my calendar.
+94. What interviews do I have coming up?
+95. Show me all dentist-related events.
+96. What events mention Priya?
+97. List events with Rahul in the title.
+98. Show me all events containing the word review.
+99. What events do I have with demo in the title?
+100. Show me all calendar items related to invoices.
+101. What travel events are on my calendar?
+102. Show me all birthdays on my calendar.
+103. What reminders do I have this week?
+104. List all bill payment reminders this month.
+105. Show me recurring workouts on my calendar.
+106. What school-related events do I have next week?
+107. Show me all family events this month.
+108. What work meetings are on my calendar today?
+109. List all health appointments coming up.
+110. Show me all events tagged as personal.
+111. What events do I have in my Work calendar today?
+112. Show me everything in my Personal calendar this weekend.
+113. What is on the Family calendar this week?
+114. List events from the Finance calendar this month.
+115. What is scheduled on the Travel calendar next month?
+116. Show me events from my Shared calendar.
+117. What do I have on the Community calendar this week?
+118. List everything in the Health calendar.
+119. What is on my Bills calendar this month?
+120. Show me upcoming events on the Kids calendar.
+121. What events are in the Leadership calendar?
+122. Show my NGO calendar events for this weekend.
+123. What is on the Engineering calendar today?
+124. List the events from the Hiring calendar next week.
+125. What events are on my main calendar tomorrow?
+126. Show me everything across all calendars for today.
+127. Show me only the primary calendar events this week.
+128. What events are in calendars other than primary today?
+129. List calendar entries that are on my Work calendar but not Personal.
+130. Which calendar has the most events this week?
+131. Show me all events at Olive Bistro.
+132. What events are scheduled at City Dental?
+133. List meetings in Conference Room B.
+134. Show me events happening at home this weekend.
+135. What is scheduled at the office tomorrow?
+136. Show me all events with Zoom in the description.
+137. What do I have at Community Center this month?
+138. List events at Sunrise Clinic.
+139. What appointments are at Green Care Hospital?
+140. Show me all events with a location set.
+141. Which events have no location?
+142. Show me events with attendees.
+143. Which meetings have no attendees listed?
+144. List events that include alex@example.com.
+145. What meetings include pm@example.com?
+146. Show me all events with guest invitations this week.
+147. Which upcoming events have more than 3 attendees?
+148. List events where Nina is invited.
+149. What events include the CEO?
+150. Show me meetings with external attendees.
+151. What all-day events do I have today?
+152. Show me all-day events this week.
+153. What timed events do I have today?
+154. List all overnight events on my calendar.
+155. Do I have anything that crosses midnight this week?
+156. Show me events longer than 2 hours today.
+157. What short meetings do I have tomorrow under 30 minutes?
+158. List events that last more than half a day.
+159. Which events are exactly one hour long this week?
+160. Show me events that start before 8 AM.
+161. What events end after 9 PM?
+162. List events happening around lunch time.
+163. Show events scheduled during my usual working hours.
+164. What do I have outside working hours this week?
+165. List late-night events this month.
+166. Show me early morning events this month.
+167. What recurring events do I have this week?
+168. Show my weekly recurring meetings.
+169. What monthly recurring reminders do I have?
+170. List all recurring family calls.
+171. Show me recurring payments on my calendar.
+172. Which events repeat every day?
+173. What events repeat every week?
+174. Show me events that happen every month.
+175. Which yearly reminders are on my calendar?
+176. List recurring events that happen on Fridays.
+177. Show my every-other-week meetings.
+178. What recurring events are scheduled for weekends?
+179. List recurring events that are currently active.
+180. Which recurring items end this month?
+181. What do I have tomorrow morning before 10 AM?
+182. What is on my calendar tomorrow afternoon?
+183. Show me my evening events for Friday.
+184. What meetings are scheduled around noon on Monday?
+185. List events between 8 and 11 AM this Wednesday.
+186. Show me what I have from 4 PM onward today.
+187. What do I have between 11 AM and 1 PM tomorrow?
+188. Show me my schedule from lunch onward.
+189. What is on my calendar between breakfast and lunch tomorrow?
+190. Do I have anything during office hours today?
+191. What do I have before my first meeting today?
+192. Show me everything after my last meeting tomorrow.
+193. What do I have in the middle of the day?
+194. List all events in the second half of today.
+195. What is on my calendar during the first half of tomorrow?
+196. Show events during the last 3 hours of the workday.
+197. What appointments do I have around 5 PM this week?
+198. List events close to midnight.
+199. What do I have at sunrise tomorrow?
+200. Show me what is booked at sunset this week.
+201. Am I free right now?
+202. Am I free this afternoon?
+203. Am I free tomorrow morning?
+204. Do I have any free time today?
+205. When am I free tomorrow?
+206. What free slots do I have this week?
+207. Am I available on Monday after 3 PM?
+208. Do I have a gap between meetings today?
+209. What are my open time slots tomorrow afternoon?
+210. Am I busy on Friday evening?
+211. Do I have any availability this weekend?
+212. When is my next free hour?
+213. Show me the gaps in my schedule today.
+214. What is my longest free block tomorrow?
+215. Do I have a 30-minute free slot today?
+216. Do I have a 1-hour gap before dinner?
+217. When am I next free for 2 hours?
+218. Am I free between 2 PM and 4 PM on Thursday?
+219. Do I have any open mornings next week?
+220. Which afternoons this week are completely free?
+221. Is Monday packed or do I have space?
+222. Can I fit a one-hour meeting tomorrow morning?
+223. Do I have any unscheduled time after lunch today?
+224. What is my earliest open slot on Friday?
+225. What is my latest open slot today?
+226. Am I double-booked anytime this week?
+227. Do any of my events overlap today?
+228. Show me all scheduling conflicts this month.
+229. Which meetings are colliding tomorrow afternoon?
+230. Are there overlapping events on Friday?
+231. Show me events that conflict with each other.
+232. Do I have back-to-back meetings today?
+233. Which events leave me no break in between?
+234. Show me my busiest day this week.
+235. Which day this month has the most events?
+236. What is my least busy day this week?
+237. Which days next week are completely empty?
+238. What day do I have the fewest meetings this month?
+239. Which calendar is the busiest today?
+240. What is my heaviest meeting day next week?
+241. Show me events with reminders set.
+242. Which upcoming events have no reminders?
+243. List events that remind me 30 minutes before.
+244. What meetings have multiple reminders?
+245. Show me private events this week.
+246. Which events are public?
+247. List events visible only to me.
+248. What events have descriptions filled in?
+249. Which events have empty descriptions?
+250. Show me detailed events with notes attached.
+251. What meetings have both location and attendees?
+252. Show me events that only have a title and nothing else.
+253. Which upcoming events have notes about Zoom?
+254. List events with conference details in the description.
+255. What calendar entries have custom reminders?
+256. Show events that are marked tentative.
+257. Which events look like placeholders?
+258. What holds do I have on my calendar this week?
+259. Show me blocks labeled focus or deep work.
+260. What no-meeting blocks do I have this month?
+261. What do I have with Priya this month?
+262. Show me events with Rahul next week.
+263. What meetings involve the design team?
+264. List all events related to finance.
+265. Show me legal-related calendar items.
+266. What events mention taxes?
+267. Show me all demos on my calendar.
+268. What reviews do I have this quarter?
+269. List interviews coming up in the next 2 weeks.
+270. Show me all family calls scheduled this month.
+271. What birthdays are coming up soon?
+272. Show me all payment reminders due this week.
+273. What doctor appointments do I have left this year?
+274. List all school events in the next month.
+275. Show me travel-related events in June.
+276. What workshops do I have coming up?
+277. Show me all webinars in my calendar.
+278. What dentist events are scheduled in the next 6 months?
+279. List every event involving my manager.
+280. Show me everything related to offsite planning.
+281. Which events are coming up next?
+282. Show me the next 5 events on my calendar.
+283. What are my next 10 calendar entries?
+284. Which event is coming up after my next one?
+285. Show me the rest of today's events from now.
+286. What are the next 3 meetings today?
+287. List the first 5 events next week.
+288. What is the next appointment in my Health calendar?
+289. What is the next event in my Personal calendar?
+290. Show the next recurring event on my calendar.
+291. Which upcoming event has the longest duration?
+292. What is the earliest event tomorrow?
+293. What is the latest event tomorrow night?
+294. Show the next all-day event.
+295. What is the next family-related event?
+296. What is my next work meeting?
+297. Show me the next payment reminder.
+298. What is the next trip on my calendar?
+299. Which event is closest to now?
+300. What is the next thing after lunch tomorrow?
+301. What happened on my calendar earlier today?
+302. What events did I have this morning?
+303. Show me what I had scheduled yesterday.
+304. What meetings did I have last week?
+305. How many events did I have yesterday?
+306. What was my first event yesterday?
+307. What was my last meeting last Friday?
+308. Show me all events from last month.
+309. What did my weekend look like last week?
+310. What all-day events did I have last month?
+311. Which recurring events happened this week?
+312. What appointments did I attend this month?
+313. Show me past events with Priya.
+314. What events did I have on April 1?
+315. List everything I had scheduled earlier this week.
+316. Show me my previous 5 events.
+317. What was the most recent event on my calendar?
+318. What did I have just before this meeting?
+319. Show me the events that ended today.
+320. What calendar items already passed this afternoon?
+321. What do I have on 14 May at 6 PM CET?
+322. Show me events scheduled in UTC this month.
+323. What meetings are set for Eastern Time?
+324. List events with JST times.
+325. Show me all cross-timezone calls this week.
+326. What overnight travel blocks do I have coming up?
+327. Are there any events that start one day and end the next?
+328. Show me events that cross midnight in the next month.
+329. What trips span multiple days?
+330. List all all-day trips on my calendar.
+331. What do I have in the first half of next month?
+332. Show me my events in the second half of this month.
+333. What is on my calendar near the end of this quarter?
+334. List everything scheduled in the first 10 days of June.
+335. What do I have during the last week of the year?
+336. Show me my calendar around New Year.
+337. What is scheduled on leap day next leap year?
+338. Do I have anything on February 29?
+339. What is on my calendar at month-end?
+340. Show me all quarter-close related events.
+341. What events include the word call?
+342. Show me events that mention sync.
+343. What titles contain review?
+344. List events with meeting in the name.
+345. Show all events with planning in the title.
+346. What calendar items mention budget?
+347. Show me anything with demo or walkthrough in it.
+348. What events have lunch in the title?
+349. List all events containing check-in.
+350. Show me entries with travel in the title or description.
+351. Do I have anything with no title?
+352. Which events have weird or placeholder names?
+353. Show me calendar items with question marks in the title.
+354. What events look like rough drafts?
+355. Show me all events named hold.
+356. What entries are marked as tentative or maybe?
+357. List events whose title starts with TBD.
+358. Show placeholder blocks on my calendar.
+359. Which events look informal or shorthand?
+360. What entries might need cleanup?
+361. Can you give me a quick summary of my day?
+362. Summarize my week for me.
+363. What does the rest of my week look like in brief?
+364. Give me a snapshot of tomorrow.
+365. What is the shape of my month?
+366. How busy am I this week?
+367. Is this month packed?
+368. What are the main things on my schedule tomorrow?
+369. What is my day looking like so far?
+370. Can you summarize my upcoming events?
+371. What should I be aware of today from my calendar?
+372. What are the highlights of next week?
+373. Give me a concise rundown of Friday.
+374. What does my afternoon look like at a glance?
+375. How full is my calendar this weekend?
+376. Which days this week are light versus heavy?
+377. What are my top commitments today?
+378. What key meetings do I have coming up?
+379. What important reminders are due soon?
+380. What deadlines are coming up on my calendar?
+381. Do I have anything important tomorrow?
+382. What should I not miss this week?
+383. Are there any big events this month?
+384. What personal commitments do I have soon?
+385. What work commitments do I have left today?
+386. What family plans are coming up next?
+387. What health appointments do I need to remember?
+388. Do I have any travel coming up soon?
+389. What financial reminders are due this month?
+390. Are there any interviews coming up soon?
+391. What do I have with my manager this month?
+392. What events involve the product team?
+393. Show me anything related to recruiting.
+394. What events have client in the title?
+395. List all board-related events.
+396. What calendar entries mention taxes or GST?
+397. Show me any visa-related events.
+398. What reminders are related to bills?
+399. List all school fee or PTM events.
+400. What events mention launch or release?
+401. What do I have this coming Monday?
+402. What do I have next Monday morning?
+403. What am I doing this Friday night?
+404. Show me what I have the day after tomorrow.
+405. What is on my calendar the weekend after next?
+406. Do I have anything this coming Thursday afternoon?
+407. Show me events for next next week.
+408. What do I have later today?
+409. What do I have first thing tomorrow?
+410. Show me what I have after dinner tonight.
+411. What is on my calendar around noon tomorrow?
+412. What am I doing right after my 3 PM meeting?
+413. What is scheduled before my dentist appointment?
+414. What do I have after my lunch break?
+415. Show me meetings surrounding my board review.
+416. What comes just before Team Lunch?
+417. What is scheduled right after my next call?
+418. What do I have between the two client meetings on Friday?
+419. Show me what is on either side of my interview tomorrow.
+420. What am I doing after the product demo?
+421. anything on monday?
+422. what all do i have today
+423. how many meetings this month
+424. what do i have tmrw morning
+425. list all my events pls
+426. do i have anything fri eve
+427. show next 5 things on my cal
+428. am i free after lunch today
+429. any conflicts this week
+430. what is my first mtg tmrw
+431. what is my last event tonight
+432. how packed is next week
+433. anything in work cal today
+434. show personal stuff this weekend
+435. what do i have w priya
+436. any dentist appts coming up
+437. show all recurring items
+438. count my events for june
+439. whats on 14/05
+440. do i have anything near month end
+441. Can you tell me everything I have going on?
+442. What's on the books for today?
+443. Walk me through my schedule tomorrow.
+444. What am I up to on Monday again?
+445. Pull up my calendar for this week.
+446. What have I got lined up this month?
+447. Do I have much happening this afternoon?
+448. What's the next thing on my plate?
+449. Any chance I'm free tomorrow evening?
+450. How many things are on my calendar right now for this week?
+451. Show me what's coming up soon.
+452. What all is scheduled for the next few days?
+453. What's my calendar looking like over the weekend?
+454. Do I have a busy Friday?
+455. Which day looks the most crowded?
+456. Which day looks the most open?
+457. What are all the meetings on my calendar this week?
+458. What reminders do I need to pay attention to today?
+459. Is there anything on my schedule I should know about tonight?
+460. What do I need to be ready for tomorrow?
+461. Show me every event tied to the Finance calendar.
+462. Which entries are private this week?
+463. What events have guests invited?
+464. Which events are all-day this month?
+465. What recurring reminders are due this week?
+466. What calendar items have no time attached?
+467. Which meetings are in the morning but outside office hours?
+468. What events are close together with barely any break?
+469. Which appointments are on weekends?
+470. What events are tied to travel or flights?
+471. What do I have around lunchtime all week?
+472. Which days have both work and personal events?
+473. What events are marked on more than one calendar?
+474. What is the earliest thing I have this week?
+475. What is the latest thing I have this week?
+476. Which event has the longest duration this month?
+477. What is the shortest meeting on my calendar today?
+478. Show me events between now and end of day.
+479. What are my upcoming commitments in plain English?
+480. Give me the important stuff from my schedule this week.
+481. What am I double-booked for tomorrow?
+482. Do I have any events stacked back to back in the afternoon?
+483. What slots are still open before 5 PM today?
+484. Is there space for a quick call tomorrow morning?
+485. How many events are left today?
+486. What all-day entries do I have next month?
+487. Which recurring events happen on weekdays only?
+488. What events are specifically in the evening this week?
+489. What do I have before sunrise tomorrow?
+490. Anything after 10 PM tonight?
+491. Show me my calendar in chronological order for the next 3 days.
+492. Which events are coming from the Shared calendar this month?
+493. What do I have with location set to Zoom this week?
+494. Which meetings include external email addresses?
+495. What events contain the word renewal?
+496. What does my schedule look like around the 15th?
+497. What do I have booked for the final week of the month?
+498. Can you break down my day by morning, afternoon, and evening?
+499. Give me a complete list of this week's events and counts.
+500. What is everything I have scheduled from now until the end of the month?
+501. List every single event on my calendar regardless of date.
+502. Show me all events ever, not just recent ones.
+503. I want to see all events across all time on my calendar.
+504. Count all events on my calendar ever created.
+505. How many total events have I ever had on my calendar?
+506. Show me all events except holidays and festivals.
+507. How many events do I have excluding public holidays?
+508. List my events but not the holiday calendar ones.
+509. Count events excluding birthday and holiday calendars.
+510. What is on my calendar except the holidays?
+511. Show everything excluding festival and holiday entries.
+512. How many non-holiday events do I have this year?
+513. List all events that are not from the holiday calendar.
+514. Show my schedule without birthday reminders.
+515. Count only my personal and work events, skip holidays.
