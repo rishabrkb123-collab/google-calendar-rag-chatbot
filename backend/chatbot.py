@@ -20,6 +20,7 @@ from backend.calendar_api import (
 from backend.config import (
     DEFAULT_SAMPLE_QUESTIONS_FILE,
     get_action_sample_questions_dir,
+    get_groq_config,
     get_ollama_config,
     get_sample_questions_path,
 )
@@ -29,6 +30,20 @@ from googleapiclient.errors import HttpError
 
 
 router = APIRouter(prefix="/chat")
+
+
+def _build_llm_client():
+    """Return a GroqClient when GROQ_API_KEY is set, otherwise OllamaClient."""
+    groq_cfg = get_groq_config()
+    if groq_cfg["api_key"]:
+        from backend.groq_client import GroqClient
+        return GroqClient(api_key=groq_cfg["api_key"], chat_model=groq_cfg["chat_model"])
+    cfg = get_ollama_config()
+    return OllamaClient(
+        base_url=cfg["base_url"],
+        chat_model=cfg["chat_model"],
+        embed_model=cfg["embed_model"],
+    )
 
 STOPWORDS = {
     "a",
@@ -750,20 +765,17 @@ def _build_action_summary(action: str, event: dict, calendars: list[dict]) -> st
 
 @router.get("/health")
 def health():
-    config = get_ollama_config()
-    client = OllamaClient(
-        base_url=config["base_url"],
-        chat_model=config["chat_model"],
-        embed_model=config["embed_model"],
-    )
+    client = _build_llm_client()
     try:
         tags = client.ensure_ready()
     except OllamaClientError as exc:
         raise HTTPException(status_code=503, detail={"message": str(exc)}) from exc
 
+    groq_cfg = get_groq_config()
+    config = {"provider": "groq", "model": groq_cfg["chat_model"]} if groq_cfg["api_key"] else get_ollama_config()
     return {
         "status": "ok",
-        "ollama": config,
+        "llm": config,
         "models": [model.get("name") for model in tags.get("models", [])],
         "sample_questions_loaded": len(_load_sample_questions()),
         "sample_questions_path": str(get_sample_questions_path()),
@@ -787,12 +799,7 @@ def chat(request: Request, payload: ChatRequest):
     except HttpError as exc:
         translate_google_api_error(exc)
 
-    ollama_config = get_ollama_config()
-    client = OllamaClient(
-        base_url=ollama_config["base_url"],
-        chat_model=ollama_config["chat_model"],
-        embed_model=ollama_config["embed_model"],
-    )
+    client = _build_llm_client()
     sample_questions = _load_sample_questions()
 
     # Extract history events BEFORE planning so the planner can see referenced

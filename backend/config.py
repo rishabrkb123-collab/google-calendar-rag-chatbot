@@ -108,6 +108,13 @@ def get_ollama_config() -> dict:
     }
 
 
+def get_groq_config() -> dict:
+    return {
+        "api_key": os.getenv("GROQ_API_KEY", "").strip(),
+        "chat_model": os.getenv("GROQ_CHAT_MODEL", "llama-3.3-70b-versatile"),
+    }
+
+
 def get_sample_questions_path() -> Path:
     configured_path = os.getenv("RAG_SAMPLE_QUESTIONS_FILE", "").strip()
     if configured_path:
