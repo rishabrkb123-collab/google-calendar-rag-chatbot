@@ -18,11 +18,16 @@ class OllamaClient:
         self.chat_model = chat_model
         self.embed_model = embed_model
 
+    # ngrok free tunnels block non-browser requests unless this header is present.
+    # It is harmless for direct (non-ngrok) Ollama connections.
+    _HEADERS = {"ngrok-skip-browser-warning": "true"}
+
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         try:
             response = httpx.post(
                 f"{self.base_url}{path}",
                 json=payload,
+                headers=self._HEADERS,
                 timeout=httpx.Timeout(180.0, connect=15.0),
             )
             response.raise_for_status()
@@ -46,6 +51,7 @@ class OllamaClient:
         try:
             response = httpx.get(
                 f"{self.base_url}/api/tags",
+                headers=self._HEADERS,
                 timeout=httpx.Timeout(30.0, connect=10.0),
             )
             response.raise_for_status()
