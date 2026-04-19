@@ -1,4 +1,3 @@
-import math
 import re
 from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
@@ -26,6 +25,7 @@ from backend.config import (
 )
 from backend.ollama_client import OllamaClient, OllamaClientError
 from backend.session import get_tokens
+from backend.vector_store import get_vector_store
 from googleapiclient.errors import HttpError
 
 
@@ -95,17 +95,6 @@ def _meaningful_tokens(text: str) -> set[str]:
     return {
         token for token in _tokenize(text) if token not in STOPWORDS and len(token) > 1
     }
-
-
-def _cosine_similarity(left: list[float], right: list[float]) -> float:
-    if not left or not right:
-        return 0.0
-    dot = sum(a * b for a, b in zip(left, right))
-    left_norm = math.sqrt(sum(value * value for value in left))
-    right_norm = math.sqrt(sum(value * value for value in right))
-    if not left_norm or not right_norm:
-        return 0.0
-    return dot / (left_norm * right_norm)
 
 
 def _event_point_to_datetime(
@@ -307,42 +296,10 @@ def _infer_requested_action(message: str) -> str:
 
 
 def _rank_texts(
-    query: str, texts: list[str], client: OllamaClient, top_k: int
+    query: str, texts: list[str], client: Any, top_k: int
 ) -> list[tuple[int, float]]:
-    if not texts:
-        return []
-
-    query_tokens = _tokenize(query)
-    lexical_scores: list[tuple[int, float]] = []
-    for index, text in enumerate(texts):
-        text_tokens = _tokenize(text)
-        overlap = len(query_tokens & text_tokens)
-        lexical_scores.append(
-            (index, overlap + (0.25 if query.lower() in text.lower() else 0.0))
-        )
-
-    lexical_scores.sort(key=lambda item: item[1], reverse=True)
-    shortlist_size = max(top_k * 6, 12)
-    has_lexical_match = any(score > 0 for _, score in lexical_scores)
-    if len(texts) <= max(top_k * 20, 80) or not has_lexical_match:
-        candidate_indices = list(range(len(texts)))
-    else:
-        candidate_indices = [index for index, _ in lexical_scores[:shortlist_size]]
-    candidate_texts = [texts[index] for index in candidate_indices]
-    embeddings = client.embed_texts([query, *candidate_texts])
-    query_embedding = embeddings[0]
-    lexical_lookup = dict(lexical_scores)
-    ranked: list[tuple[int, float]] = []
-    for index, embedding in zip(candidate_indices, embeddings[1:]):
-        ranked.append(
-            (
-                index,
-                _cosine_similarity(query_embedding, embedding)
-                + (lexical_lookup.get(index, 0.0) * 0.05),
-            )
-        )
-    ranked.sort(key=lambda item: item[1], reverse=True)
-    return ranked[:top_k]
+    """Thin wrapper over VectorStore.rank_texts. ``client`` is ignored."""
+    return get_vector_store().rank_texts(query, texts, top_k)
 
 
 def _primary_calendar_id(calendars: list[dict]) -> str:
@@ -433,20 +390,14 @@ def _plan_chat_action(
 ) -> dict[str, Any]:
     requested_action = _infer_requested_action(request_message)
     action_samples = _load_action_sample_questions().get(requested_action, [])
-    ranked_questions = (
-        _rank_texts(request_message, sample_questions, client, top_k=6)
-        if sample_questions
-        else []
-    )
-    similar_questions = [sample_questions[index] for index, _ in ranked_questions]
-    ranked_action_samples = (
-        _rank_texts(request_message, action_samples, client, top_k=6)
+    vs = get_vector_store()
+    vs.seed_sample_questions(sample_questions)
+    similar_questions = vs.query_sample_questions(request_message, top_k=6) if sample_questions else []
+    similar_action_samples = (
+        [action_samples[i] for i, _ in vs.rank_texts(request_message, action_samples, top_k=6)]
         if action_samples
         else []
     )
-    similar_action_samples = [
-        action_samples[index] for index, _ in ranked_action_samples
-    ]
     now = datetime.now().astimezone().isoformat()
     calendar_lines = "\n".join(
         f"- {calendar['name']} ({calendar['id']})" for calendar in calendars
@@ -537,13 +488,12 @@ def _rank_events(
     query: str,
     events: list[dict],
     calendar_lookup: dict[str, dict],
-    client: OllamaClient,
     top_k: int,
 ) -> list[tuple[dict, float]]:
     if not events:
         return []
     documents = [_event_to_document(event, calendar_lookup) for event in events]
-    ranked_indices = _rank_texts(query, documents, client, top_k=top_k)
+    ranked_indices = _rank_texts(query, documents, None, top_k=top_k)
     return [(events[index], score) for index, score in ranked_indices]
 
 
@@ -551,9 +501,8 @@ def _select_ranked_event(
     query: str,
     events: list[dict],
     calendar_lookup: dict[str, dict],
-    client: OllamaClient,
 ) -> tuple[Optional[dict], list[dict]]:
-    ranked = _rank_events(query, events, calendar_lookup, client, top_k=3)
+    ranked = _rank_events(query, events, calendar_lookup, top_k=3)
     if not ranked:
         return None, []
 
@@ -700,7 +649,6 @@ def _resolve_target_event(
     plan: dict[str, Any],
     events: list[dict],
     calendars: list[dict],
-    client: OllamaClient,
 ) -> tuple[Optional[dict], list[dict]]:
     if not events:
         return None, []
@@ -744,7 +692,7 @@ def _resolve_target_event(
                 return strongest_matches[0], strongest_matches
             if strongest_matches:
                 matched_event, ranked_options = _select_ranked_event(
-                    query, strongest_matches, calendar_lookup, client
+                    query, strongest_matches, calendar_lookup
                 )
                 if matched_event:
                     return matched_event, strongest_matches
@@ -754,7 +702,7 @@ def _resolve_target_event(
     if len(events) == 1 and query_tokens:
         return None, events[:1]
 
-    return _select_ranked_event(query, events, calendar_lookup, client)
+    return _select_ranked_event(query, events, calendar_lookup)
 
 
 def _build_action_summary(action: str, event: dict, calendars: list[dict]) -> str:
@@ -842,7 +790,6 @@ def chat(request: Request, payload: ChatRequest):
                     plan,
                     _dedupe_events([*history_events, *prefetch_candidates]),
                     calendars,
-                    client,
                 )
                 if target_prefetch:
                     clarification_events = [target_prefetch]
@@ -910,14 +857,8 @@ def chat(request: Request, payload: ChatRequest):
 
     if action == "answer":
         try:
-            ranked_questions = (
-                _rank_texts(payload.message, sample_questions, client, top_k=6)
-                if sample_questions
-                else []
-            )
-            relevant_questions = [
-                sample_questions[index] for index, _ in ranked_questions
-            ]
+            vs = get_vector_store()
+            relevant_questions = vs.query_sample_questions(payload.message, top_k=6) if sample_questions else []
             calendar_lookup = {calendar["id"]: calendar for calendar in calendars}
             if plan.get("list_all") or plan.get("all_time"):
                 # User wants every event — skip relevance ranking, return all.
@@ -929,7 +870,6 @@ def chat(request: Request, payload: ChatRequest):
                         payload.message,
                         filtered_events,
                         calendar_lookup,
-                        client,
                         top_k=15,
                     )
                 ]
@@ -1013,7 +953,7 @@ def chat(request: Request, payload: ChatRequest):
                     options = [target_event]
             if not target_event:
                 target_event, options = _resolve_target_event(
-                    payload.message, plan, filtered_events, calendars, client
+                    payload.message, plan, filtered_events, calendars
                 )
         except OllamaClientError as exc:
             raise HTTPException(status_code=503, detail={"message": str(exc)}) from exc
