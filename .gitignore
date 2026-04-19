@@ -36,3 +36,7 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+
+# ── ChromaDB on-disk vector store ───────────────────────────────────────────────
+# ChromaDB on-disk vector store (machine-local, not committed)
+backend/chroma_db/
