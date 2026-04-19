@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 from backend.chatbot import (
     _load_sample_questions,
     _overlaps_range,
-    _rank_texts,
     _resolve_target_event,
 )
 
@@ -37,10 +36,9 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
             "delete_event": [],
         },
     )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.ensure_ready",
-        lambda self: {"models": [{"name": "llama3.1:8b"}]},
-    )
+    mock_llm = MagicMock()
+    mock_llm.ensure_ready.return_value = {"models": [{"name": "llama3.1:8b"}]}
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
 
     response = client.get("/chat/health")
 
@@ -106,31 +104,26 @@ def test_chat_answer_flow_returns_response(client, monkeypatch):
         "backend.chatbot._load_sample_questions",
         lambda: ["What do I have today?"],
     )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_json",
-        lambda self, system_prompt, user_prompt: {
-            "action": "answer",
-            "needs_clarification": False,
-            "clarification_question": "",
-            "calendar_id": "primary",
-            "search_query": "dentist",
-            "target_hint": "",
-            "time_min": "2026-04-14T00:00:00+05:30",
-            "time_max": "2026-04-14T23:59:59+05:30",
-            "event": {},
-            "updates": {},
-        },
-    )
-    monkeypatch.setattr(
-        "backend.chatbot._rank_texts",
-        lambda query, texts, client, top_k: [(0, 0.9)],
-    )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_text",
-        lambda self, system_prompt, user_prompt: (
-            "You have a dentist appointment today at 9:00 AM."
-        ),
-    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "answer",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "primary",
+        "search_query": "dentist",
+        "target_hint": "",
+        "time_min": "2026-04-14T00:00:00+05:30",
+        "time_max": "2026-04-14T23:59:59+05:30",
+        "event": {},
+        "updates": {},
+    }
+    mock_llm.chat_text.return_value = "You have a dentist appointment today at 9:00 AM."
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+    mock_vs = MagicMock()
+    mock_vs.rank_texts.return_value = [(0, 0.9)]
+    mock_vs.query_sample_questions.return_value = ["What do I have today?"]
+    mock_vs.seed_sample_questions.return_value = None
+    monkeypatch.setattr("backend.chatbot.get_vector_store", lambda: mock_vs)
 
     response = client.post(
         "/chat", json={"message": "What do I have today?", "history": []}
@@ -178,31 +171,26 @@ def test_chat_answer_handles_all_day_events_without_datetime_crash(client, monke
     monkeypatch.setattr(
         "backend.chatbot._load_sample_questions", lambda: ["What do I have today?"]
     )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_json",
-        lambda self, system_prompt, user_prompt: {
-            "action": "answer",
-            "needs_clarification": False,
-            "clarification_question": "",
-            "calendar_id": "primary",
-            "search_query": "holiday",
-            "target_hint": "",
-            "time_min": "2026-04-14T00:00:00+05:30",
-            "time_max": "2026-04-14T23:59:59+05:30",
-            "event": {},
-            "updates": {},
-        },
-    )
-    monkeypatch.setattr(
-        "backend.chatbot._rank_texts",
-        lambda query, texts, client, top_k: [(0, 0.9)],
-    )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_text",
-        lambda self, system_prompt, user_prompt: (
-            "You have a public holiday on April 14."
-        ),
-    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "answer",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "primary",
+        "search_query": "holiday",
+        "target_hint": "",
+        "time_min": "2026-04-14T00:00:00+05:30",
+        "time_max": "2026-04-14T23:59:59+05:30",
+        "event": {},
+        "updates": {},
+    }
+    mock_llm.chat_text.return_value = "You have a public holiday on April 14."
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+    mock_vs = MagicMock()
+    mock_vs.rank_texts.return_value = [(0, 0.9)]
+    mock_vs.query_sample_questions.return_value = ["What do I have today?"]
+    mock_vs.seed_sample_questions.return_value = None
+    monkeypatch.setattr("backend.chatbot.get_vector_store", lambda: mock_vs)
 
     response = client.post(
         "/chat", json={"message": "Do I have anything today?", "history": []}
@@ -236,25 +224,24 @@ def test_chat_update_can_resolve_follow_up_from_history_events(client, monkeypat
     monkeypatch.setattr(
         "backend.chatbot._load_sample_questions", lambda: ["Move my event to tomorrow."]
     )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_json",
-        lambda self, system_prompt, user_prompt: {
-            "action": "update_event",
-            "needs_clarification": False,
-            "clarification_question": "",
-            "calendar_id": "primary",
-            "search_query": "Sample title",
-            "target_hint": "Sample title",
-            "time_min": "",
-            "time_max": "",
-            "event": {},
-            "updates": {
-                "start": "2026-04-29T17:00:00+05:30",
-                "end": "2026-04-29T19:00:00+05:30",
-                "all_day": False,
-            },
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "update_event",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "primary",
+        "search_query": "Sample title",
+        "target_hint": "Sample title",
+        "time_min": "",
+        "time_max": "",
+        "event": {},
+        "updates": {
+            "start": "2026-04-29T17:00:00+05:30",
+            "end": "2026-04-29T19:00:00+05:30",
+            "all_day": False,
         },
-    )
+    }
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
     monkeypatch.setattr(
         "backend.chatbot.update_event",
         lambda creds, calendar_id, event_id, body: {
@@ -334,21 +321,20 @@ def test_chat_delete_does_not_delete_unrelated_event_when_title_does_not_match(
     monkeypatch.setattr(
         "backend.chatbot._load_sample_questions", lambda: ["Delete my event"]
     )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_json",
-        lambda self, system_prompt, user_prompt: {
-            "action": "delete_event",
-            "needs_clarification": False,
-            "clarification_question": "",
-            "calendar_id": "primary",
-            "search_query": "Python Anaconda event",
-            "target_hint": "Python Anaconda event",
-            "time_min": "",
-            "time_max": "",
-            "event": {},
-            "updates": {},
-        },
-    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "delete_event",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "primary",
+        "search_query": "Python Anaconda event",
+        "target_hint": "Python Anaconda event",
+        "time_min": "",
+        "time_max": "",
+        "event": {},
+        "updates": {},
+    }
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
 
     response = client.post(
         "/chat",
@@ -360,22 +346,6 @@ def test_chat_delete_does_not_delete_unrelated_event_when_title_does_not_match(
     assert body["mode"] == "clarification"
     assert "could not identify a single matching event" in body["answer"].lower()
 
-
-def test_rank_texts_uses_embedding_fallback_when_lexical_overlap_is_zero():
-    texts = [f"filler text {index}" for index in range(99)] + ["dentist appointment"]
-
-    class FakeClient:
-        def embed_texts(self, requested_texts):
-            embeddings = [[1.0, 0.0]]
-            for text in requested_texts[1:]:
-                embeddings.append(
-                    [1.0, 0.0] if text == "dentist appointment" else [0.0, 1.0]
-                )
-            return embeddings
-
-    ranked = _rank_texts("checkup", texts, FakeClient(), top_k=1)
-
-    assert ranked == [(99, 1.0)]
 
 
 def test_resolve_target_event_can_fall_back_to_semantic_match(monkeypatch):
@@ -395,7 +365,7 @@ def test_resolve_target_event_can_fall_back_to_semantic_match(monkeypatch):
     }
     monkeypatch.setattr(
         "backend.chatbot._rank_events",
-        lambda query, events, calendar_lookup, client, top_k: [
+        lambda query, events, calendar_lookup, top_k: [
             (dentist_event, 0.91),
             (lunch_event, 0.41),
         ],
@@ -406,7 +376,6 @@ def test_resolve_target_event_can_fall_back_to_semantic_match(monkeypatch):
         {"target_hint": "checkup", "search_query": "checkup"},
         [dentist_event, lunch_event],
         [{"id": "primary", "name": "My Calendar", "primary": True}],
-        MagicMock(),
     )
 
     assert matched_event == dentist_event
@@ -457,28 +426,26 @@ def test_chat_answer_defaults_to_all_calendars_when_planner_omits_calendar_id(
     monkeypatch.setattr(
         "backend.chatbot._load_sample_questions", lambda: ["What do I have today?"]
     )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_json",
-        lambda self, system_prompt, user_prompt: {
-            "action": "answer",
-            "needs_clarification": False,
-            "clarification_question": "",
-            "calendar_id": "",
-            "search_query": "today",
-            "target_hint": "",
-            "time_min": "2026-04-14T00:00:00+05:30",
-            "time_max": "2026-04-14T23:59:59+05:30",
-            "event": {},
-            "updates": {},
-        },
-    )
-    monkeypatch.setattr(
-        "backend.chatbot._rank_texts", lambda query, texts, client, top_k: []
-    )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_text",
-        lambda self, system_prompt, user_prompt: "You have nothing scheduled.",
-    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "answer",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "",
+        "search_query": "today",
+        "target_hint": "",
+        "time_min": "2026-04-14T00:00:00+05:30",
+        "time_max": "2026-04-14T23:59:59+05:30",
+        "event": {},
+        "updates": {},
+    }
+    mock_llm.chat_text.return_value = "You have nothing scheduled."
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+    mock_vs = MagicMock()
+    mock_vs.rank_texts.return_value = []
+    mock_vs.query_sample_questions.return_value = []
+    mock_vs.seed_sample_questions.return_value = None
+    monkeypatch.setattr("backend.chatbot.get_vector_store", lambda: mock_vs)
 
     response = client.post(
         "/chat", json={"message": "What do I have today?", "history": []}
@@ -518,30 +485,30 @@ def test_chat_answer_does_not_fall_back_to_unrelated_events_when_time_filter_is_
     monkeypatch.setattr(
         "backend.chatbot._load_sample_questions", lambda: ["What do I have tomorrow?"]
     )
-    monkeypatch.setattr(
-        "backend.chatbot.OllamaClient.chat_json",
-        lambda self, system_prompt, user_prompt: {
-            "action": "answer",
-            "needs_clarification": False,
-            "clarification_question": "",
-            "calendar_id": "",
-            "search_query": "tomorrow",
-            "target_hint": "",
-            "time_min": "2026-04-15T00:00:00+05:30",
-            "time_max": "2026-04-15T23:59:59+05:30",
-            "event": {},
-            "updates": {},
-        },
-    )
-    monkeypatch.setattr(
-        "backend.chatbot._rank_texts", lambda query, texts, client, top_k: []
-    )
-
-    def fake_chat_text(self, system_prompt, user_prompt):
+    def fake_chat_text(system_prompt, user_prompt):
         assert "RELEVANT_EVENTS:\nnone" in user_prompt
         return "You do not have anything scheduled tomorrow."
 
-    monkeypatch.setattr("backend.chatbot.OllamaClient.chat_text", fake_chat_text)
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "answer",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "",
+        "search_query": "tomorrow",
+        "target_hint": "",
+        "time_min": "2026-04-15T00:00:00+05:30",
+        "time_max": "2026-04-15T23:59:59+05:30",
+        "event": {},
+        "updates": {},
+    }
+    mock_llm.chat_text.side_effect = fake_chat_text
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+    mock_vs = MagicMock()
+    mock_vs.rank_texts.return_value = []
+    mock_vs.query_sample_questions.return_value = []
+    mock_vs.seed_sample_questions.return_value = None
+    monkeypatch.setattr("backend.chatbot.get_vector_store", lambda: mock_vs)
 
     response = client.post(
         "/chat", json={"message": "What do I have tomorrow?", "history": []}
