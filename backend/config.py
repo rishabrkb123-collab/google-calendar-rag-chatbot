@@ -16,6 +16,7 @@ DEFAULT_OLLAMA_CHAT_MODEL = "llama3.1:8b"
 DEFAULT_OLLAMA_EMBED_MODEL = "nomic-embed-text"
 DEFAULT_SAMPLE_QUESTIONS_FILE = PROJECT_ROOT / "google_calendar_rag_1000_questions.txt"
 DEFAULT_ACTION_SAMPLE_QUESTIONS_DIR = PROJECT_ROOT / "rag_samples"
+DEFAULT_CHROMA_DB_PATH = BACKEND_DIR / "chroma_db"
 
 # Load environment variables once from the backend-specific .env file.
 load_dotenv(dotenv_path=ENV_PATH, override=True)
@@ -133,3 +134,11 @@ def get_action_sample_questions_dir() -> Path:
             path = PROJECT_ROOT / path
         return path
     return DEFAULT_ACTION_SAMPLE_QUESTIONS_DIR
+
+
+def get_chroma_db_path() -> Path:
+    configured = os.getenv("CHROMA_DB_PATH", "").strip()
+    if configured:
+        path = Path(configured)
+        return path if path.is_absolute() else PROJECT_ROOT / path
+    return DEFAULT_CHROMA_DB_PATH
