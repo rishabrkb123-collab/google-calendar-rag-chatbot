@@ -6,6 +6,7 @@ of which LLM backend (Groq / Ollama) is active for chat.
 from __future__ import annotations
 
 import re
+import threading
 from pathlib import Path
 
 import chromadb
@@ -40,7 +41,13 @@ class VectorStore:
 
     def seed_sample_questions(self, questions: list[str]) -> None:
         """Embed and store questions. No-op if already seeded or list is empty."""
-        if self._questions_seeded or not questions:
+        if not questions:
+            return
+        if self._questions_seeded:
+            return
+        # Re-check DB count in case another instance seeded concurrently.
+        if self._questions_col.count() > 0:
+            self._questions_seeded = True
             return
         embeddings = self.embed(questions)
         self._questions_col.add(
@@ -52,9 +59,9 @@ class VectorStore:
 
     def query_sample_questions(self, query: str, top_k: int) -> list[str]:
         """Return the top-k sample questions most semantically similar to query."""
-        count = self._questions_col.count()
-        if count == 0:
+        if not self._questions_seeded:
             return []
+        count = self._questions_col.count()
         k = min(top_k, count)
         query_emb = self.embed([query])[0]
         results = self._questions_col.query(
@@ -84,6 +91,10 @@ class VectorStore:
         Returns a list of ``(original_index, score)`` pairs, highest score first,
         capped at *top_k*.  On large corpora a lexical pre-filter shortlists
         candidates before embedding to keep latency low.
+
+        Note: scores are not bounded to [0, 1]. A small lexical-overlap bonus
+        (0.05 * token_overlap) is added to the cosine score, so high-overlap
+        queries can produce scores slightly above 1.0.
         """
         if not texts:
             return []
@@ -122,12 +133,15 @@ class VectorStore:
 # ── Module-level singleton ────────────────────────────────────────────────────
 
 _instance: VectorStore | None = None
+_instance_lock = threading.Lock()
 
 
 def get_vector_store() -> VectorStore:
     """Return the process-wide VectorStore singleton (lazy-initialised)."""
     global _instance
     if _instance is None:
-        from backend.config import get_chroma_db_path  # local import avoids circular
-        _instance = VectorStore(db_path=get_chroma_db_path())
+        with _instance_lock:
+            if _instance is None:
+                from backend.config import get_chroma_db_path  # avoids circular import
+                _instance = VectorStore(db_path=get_chroma_db_path())
     return _instance

@@ -42,7 +42,7 @@ def _fake_embed(texts: list[str]) -> list[list[float]]:
 def test_embed_returns_one_vector_per_text(tmp_path):
     vs = _make_vs(tmp_path)
     with patch.object(vs, "embed", side_effect=_fake_embed):
-        vecs = _fake_embed(["hello", "world"])
+        vecs = vs.embed(["hello", "world"])
     assert len(vecs) == 2
 
 
