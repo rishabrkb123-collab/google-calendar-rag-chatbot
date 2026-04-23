@@ -1,14 +1,7 @@
-"""Groq API client — drop-in replacement for OllamaClient.
-
-Uses Groq's OpenAI-compatible chat endpoint for planning and answering.
-Embeddings are implemented as lightweight bag-of-words TF vectors so the
-RAG ranking pipeline continues to work without a separate embeddings model.
-"""
+"""Groq API client — drop-in replacement for OllamaClient."""
 
 import json
-import math
 import re
-from collections import Counter
 from typing import Any
 
 import httpx
@@ -22,8 +15,6 @@ class GroqClient:
     def __init__(self, api_key: str, chat_model: str):
         self.api_key = api_key
         self.chat_model = chat_model
-        # embed_model attribute kept for interface compatibility
-        self.embed_model = "bow-tfidf"
         self._headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -54,39 +45,6 @@ class GroqClient:
             raise OllamaClientError("Groq returned invalid JSON.") from exc
 
         return {"models": [{"name": m["id"]} for m in data.get("data", [])]}
-
-    # ------------------------------------------------------------------
-    # Embeddings — lightweight bag-of-words cosine-compatible vectors.
-    # Not as powerful as nomic-embed-text but avoids any external API
-    # call and works well for short calendar event text.
-    # ------------------------------------------------------------------
-    def embed_texts(self, texts: list[str]) -> list[list[float]]:
-        if not texts:
-            return []
-
-        tokenized: list[Counter] = []
-        for text in texts:
-            tokens = re.findall(r"[a-z0-9]+", text.lower())
-            tokenized.append(Counter(tokens))
-
-        # Shared vocabulary across all texts in this batch.
-        vocab: list[str] = sorted({tok for c in tokenized for tok in c})
-        if not vocab:
-            return [[0.0] for _ in texts]
-
-        vocab_index = {tok: i for i, tok in enumerate(vocab)}
-        embeddings: list[list[float]] = []
-        for counter in tokenized:
-            vec = [0.0] * len(vocab)
-            for tok, cnt in counter.items():
-                if tok in vocab_index:
-                    vec[vocab_index[tok]] = float(cnt)
-            norm = math.sqrt(sum(v * v for v in vec))
-            if norm > 0:
-                vec = [v / norm for v in vec]
-            embeddings.append(vec)
-
-        return embeddings
 
     # ------------------------------------------------------------------
     # Chat helpers

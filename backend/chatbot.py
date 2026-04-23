@@ -42,36 +42,67 @@ def _build_llm_client():
     return OllamaClient(
         base_url=cfg["base_url"],
         chat_model=cfg["chat_model"],
-        embed_model=cfg["embed_model"],
+        api_key=cfg.get("api_key", ""),
     )
 
 STOPWORDS = {
     "a",
+    "about",
     "an",
+    "appointment",
     "at",
     "by",
+    "call",
+    "cancel",
     "change",
     "create",
+    "daily",
     "delete",
     "edit",
     "event",
     "for",
     "from",
     "in",
+    "lunch",
+    "meeting",
     "modify",
     "move",
     "my",
-    "one",
     "of",
     "on",
+    "one",
+    "reminder",
     "remove",
     "reschedule",
+    "schedule",
+    "session",
     "shift",
+    "standup",
+    "sync",
     "the",
     "this",
     "to",
     "update",
+    "weekly",
+    "with",
 }
+
+_PRONOUN_RE = re.compile(
+    r"\b(it|this|that|the same one?|that one|the event|that event|this event)\b",
+    re.IGNORECASE,
+)
+_DELETE_ACTION_RE = re.compile(r"\b(cancel|delete|remove|drop)\b", re.IGNORECASE)
+_UPDATE_ACTION_RE = re.compile(
+    r"\b(update|move|reschedule|change|edit|modify|shift|rename|postpone|delay)\b",
+    re.IGNORECASE,
+)
+_CREATE_ACTION_RE = re.compile(
+    r"\b(create|schedule|book|add|set up|make)\b", re.IGNORECASE
+)
+_ANSWER_ACTION_RE = re.compile(
+    r"\b(what|when|which|who|list|show|find|search|count|availability|available|am i free|do i have|free slot|free time)\b",
+    re.IGNORECASE,
+)
 
 ACTION_SAMPLE_GROUPS = ("create_event", "update_event", "delete_event")
 
@@ -85,6 +116,12 @@ class ChatTurn(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1)
     history: list[ChatTurn] = Field(default_factory=list)
+    # When the user taps a suggested event card in the UI, the frontend passes
+    # the event's ID here so the backend can skip fuzzy matching entirely.
+    selected_event_id: Optional[str] = None
+    # The frontend echoes the pending_plan from the last clarification response
+    # so the original action + updates survive across clarification turns.
+    pending_plan: Optional[dict] = None
 
 
 def _tokenize(text: str) -> set[str]:
@@ -161,15 +198,16 @@ def _event_to_document(event: dict, calendar_lookup: dict[str, dict]) -> str:
         or ""
     )
     end = event.get("end", {}).get("dateTime") or event.get("end", {}).get("date") or ""
-    attendee_text = ", ".join(
-        attendee.get("email", "")
-        for attendee in event.get("attendees", [])
-        if attendee.get("email")
-    )
-    parts = [
-        f"calendar {calendar_name}",
-        f"title {event.get('title') or '(No title)'}",
-    ]
+    attendee_parts = []
+    for attendee in event.get("attendees", []):
+        name = attendee.get("displayName") or attendee.get("email", "").split("@")[0]
+        if name:
+            attendee_parts.append(name)
+    attendee_text = ", ".join(attendee_parts)
+    parts = [f"title {event.get('title') or '(No title)'}"]
+    if start:
+        parts.append(f"date {start[:10]}")
+    parts.append(f"calendar {calendar_name}")
     if start:
         parts.append(f"start {start}")
     if end:
@@ -179,8 +217,7 @@ def _event_to_document(event: dict, calendar_lookup: dict[str, dict]) -> str:
         parts.append(f"location {location}")
     description = (event.get("description") or "").strip()
     if description:
-        # Cap description length to avoid bloating the embedding input.
-        parts.append(f"description {description[:300]}")
+        parts.append(f"description {description[:600]}")
     if attendee_text:
         parts.append(f"attendees {attendee_text}")
     return " | ".join(parts)
@@ -197,6 +234,22 @@ def _format_event_line(event: dict, calendar_lookup: dict[str, dict]) -> str:
     )
     end = event.get("end", {}).get("dateTime") or event.get("end", {}).get("date") or ""
     return f"[{calendar_name}] {event.get('title', '(No title)')} | {start} -> {end} | {event.get('location', '')}".strip()
+
+
+def _event_match_text(event: dict) -> str:
+    attendee_parts = []
+    for attendee in event.get("attendees", []):
+        display_name = attendee.get("displayName") or attendee.get("email", "").split("@")[0]
+        if display_name:
+            attendee_parts.append(display_name)
+    parts = [
+        event.get("title", ""),
+        event.get("location", ""),
+        (event.get("description") or "")[:300],
+        event.get("organizer", ""),
+        " ".join(attendee_parts),
+    ]
+    return " | ".join(part for part in parts if part)
 
 
 def _parse_sample_questions(text: str) -> list[str]:
@@ -282,24 +335,16 @@ def _load_action_sample_questions() -> dict[str, list[str]]:
 
 
 def _infer_requested_action(message: str) -> str:
-    lowered = message.lower()
-    if any(keyword in lowered for keyword in ["create", "schedule", "book", "add"]):
-        return "create_event"
-    if any(
-        keyword in lowered
-        for keyword in ["update", "move", "reschedule", "change", "edit", "modify"]
-    ):
-        return "update_event"
-    if any(keyword in lowered for keyword in ["delete", "remove", "cancel"]):
+    if _DELETE_ACTION_RE.search(message):
         return "delete_event"
+    if _UPDATE_ACTION_RE.search(message):
+        return "update_event"
+    if _CREATE_ACTION_RE.search(message):
+        return "create_event"
+    if message.strip().endswith("?") or _ANSWER_ACTION_RE.search(message):
+        return "answer"
     return "answer"
 
-
-def _rank_texts(
-    query: str, texts: list[str], client: Any, top_k: int
-) -> list[tuple[int, float]]:
-    """Thin wrapper over VectorStore.rank_texts. ``client`` is ignored."""
-    return get_vector_store().rank_texts(query, texts, top_k)
 
 
 def _primary_calendar_id(calendars: list[dict]) -> str:
@@ -331,20 +376,41 @@ def _resolve_calendar_id(
     for calendar in calendars:
         if normalized in calendar["name"].lower():
             return calendar["id"]
-    return requested_value
+    return default_value
+
+
+def _extract_target_hint_from_message(message: str) -> str:
+    """Best-effort extraction of event name from 'delete/change [NAME] appointment' patterns."""
+    pattern = re.compile(
+        r"(?:delete|remove|cancel|update|change|move|reschedule|edit|shift)\s+"
+        r"(?:my\s+|the\s+|an?\s+)?(['\"]?)(.+?)\1"
+        r"\s*(?:appointment|event|meeting|schedule|reminder)?(?:\s+(?:from|to|on|at|by)\b.*)?$",
+        re.IGNORECASE,
+    )
+    m = pattern.search(message.strip())
+    if m:
+        name = m.group(2).strip()
+        # Filter out noise phrases
+        noise = {"appointment", "event", "meeting", "schedule", "reminder", "the", "my", "an", "a"}
+        if name.lower() not in noise and len(name) > 1:
+            return name
+    return ""
 
 
 def _fallback_plan(message: str, calendars: list[dict]) -> dict[str, Any]:
     action = _infer_requested_action(message)
+    target = _extract_target_hint_from_message(message) if action != "answer" else ""
     return {
         "action": action,
-        "needs_clarification": action != "answer",
-        "clarification_question": "Please tell me the exact event title and date/time you want me to change."
-        if action != "answer"
-        else "",
+        "needs_clarification": action != "answer" and not target,
+        "clarification_question": (
+            "I couldn't find that event. Please check the event name and try again."
+            if action != "answer" and not target
+            else ""
+        ),
         "calendar_id": _default_calendar_id(action, calendars),
-        "search_query": message,
-        "target_hint": "",
+        "search_query": target or message,
+        "target_hint": target,
         "time_min": "",
         "time_max": "",
         "event": {},
@@ -355,7 +421,7 @@ def _fallback_plan(message: str, calendars: list[dict]) -> dict[str, Any]:
 def _parse_history(history: list[ChatTurn]) -> str:
     if not history:
         return ""
-    trimmed = history[-6:]
+    trimmed = history[-10:]
     return "\n".join(f"{turn.role}: {turn.content}" for turn in trimmed)
 
 
@@ -380,6 +446,31 @@ def _history_events(history: list[ChatTurn]) -> list[dict]:
     return _dedupe_events(events)
 
 
+def _pending_plan_context(pending_plan: Optional[dict]) -> str:
+    """Format a pending_plan as an explicit context block for the planner prompt."""
+    if not pending_plan:
+        return ""
+    pp_action = pending_plan.get("action", "")
+    if pp_action not in {"update_event", "delete_event"}:
+        return ""
+    lines = [
+        "ACTIVE_OPERATION (already established — do NOT change the action or ask again):",
+        f"  action      : {pp_action}",
+    ]
+    if pending_plan.get("target_hint"):
+        lines.append(f"  target event: {pending_plan['target_hint']}")
+    updates = {k: v for k, v in (pending_plan.get("updates") or {}).items() if v}
+    if updates:
+        lines.append(f"  pending updates: {updates}")
+    lines.append(
+        "The user's current message is COMPLETING this operation (selecting the event, "
+        "confirming, or providing a missing detail). Keep action = "
+        f'"{pp_action}" and needs_clarification = false. '
+        "Only update the fields the user just provided; preserve everything else."
+    )
+    return "\n".join(lines)
+
+
 def _plan_chat_action(
     request_message: str,
     history: list[ChatTurn],
@@ -387,8 +478,14 @@ def _plan_chat_action(
     calendars: list[dict],
     sample_questions: list[str],
     client: OllamaClient,
+    pending_plan: Optional[dict] = None,
 ) -> dict[str, Any]:
     requested_action = _infer_requested_action(request_message)
+    # When a pending_plan exists, trust it over the raw keyword inference so
+    # that follow-up messages like "I mean the X event" don't override the action.
+    if pending_plan and pending_plan.get("action") in {"update_event", "delete_event"}:
+        requested_action = pending_plan["action"]
+
     action_samples = _load_action_sample_questions().get(requested_action, [])
     vs = get_vector_store()
     vs.seed_sample_questions(sample_questions)
@@ -412,38 +509,71 @@ def _plan_chat_action(
         )
         or "none"
     )
+    pending_context = _pending_plan_context(pending_plan)
 
     system_prompt = (
-        "You are a planner for a Google Calendar assistant. "
-        "Return strict JSON only. Convert relative dates using the supplied current datetime. "
-        "Use these actions only: answer, create_event, update_event, delete_event. "
-        "If the user wants information, use action answer. "
-        "Set all_time to true ONLY when the user explicitly asks for data across all time "
-        "(e.g. 'all time', 'ever', 'all events ever'). "
-        "Set list_all to true when the user asks to list, show, or count ALL of their events "
-        "(e.g. 'list all my events', 'show everything', 'count all events', 'list every event'). "
-        "Set exclude_holiday_calendars to true when the user asks to exclude holidays, festivals, "
-        "or birthday calendars. "
-        "If key details are missing, set needs_clarification true and ask a short question. "
-        "IMPORTANT: When the current message is a reply to a clarification (RECENT_HISTORY shows "
-        "the assistant asked a question about an event), keep the same action as the original "
-        "request and set target_hint and search_query to the event title from RECENT_HISTORY. "
-        "For update/delete where the user says 'keep it the same' or 'same time', use the "
-        "HISTORY_EVENTS times to fill in the start/end values — do NOT ask again. "
-        "Use ISO 8601 datetime strings with timezone offsets for timed events. "
-        "Use YYYY-MM-DD for all-day events. "
-        "For recurring events, return Google Calendar recurrence rules like RRULE:FREQ=WEEKLY;BYDAY=MO."
+        "You are the planning layer of a Google Calendar assistant. "
+        "Your only job is to parse the user's intent and return a strict JSON plan — no prose, no explanation. "
+        "Available actions: answer, create_event, update_event, delete_event. "
+        "Use 'answer' for any information request (listing, searching, counting, asking about events). "
+        "Use 'create_event' only when the user explicitly wants to add a new event. "
+        "Use 'update_event' / 'delete_event' only when the user wants to modify or remove a specific existing event. "
+        "Flags:\n"
+        "  all_time  — set true ONLY when the user says 'all time', 'ever', 'all events ever'.\n"
+        "  list_all  — set true when the user says 'list all', 'show everything', 'count all events'.\n"
+        "  exclude_holiday_calendars — set true when the user explicitly says to exclude holidays/birthdays.\n"
+        "  needs_clarification — set true ONLY when a truly required field is COMPLETELY absent and cannot "
+        "be inferred from any context. Do NOT set needs_clarification=true in these common cases:\n"
+        "    - User gives event name + new date (even without exact time) → needs_clarification=false.\n"
+        "    - User says 'same time/timing/timings' → needs_clarification=false; set updates.start to "
+        "date-only (YYYY-MM-DD); backend preserves existing time automatically.\n"
+        "    - User confirms, says 'yes', 'ok', 'correct', or selects a shown event → needs_clarification=false.\n"
+        "    - The target event can be inferred from RECENT_HISTORY or HISTORY_EVENTS → needs_clarification=false.\n"
+        "  When needs_clarification IS required: ask exactly ONE short, specific question. Never ask for "
+        "information that was already provided earlier in the conversation.\n"
+        "Date-only update rule: when the user says 'same time/timing/timings' alongside a new date, set "
+        "updates.start = 'YYYY-MM-DD' (date only, no time component). The backend handles time preservation.\n"
+        "Datetime rules:\n"
+        "  - Convert all relative dates ('tomorrow', 'next Monday') using CURRENT_DATETIME.\n"
+        "  - Use ISO 8601 with timezone offset for timed events (e.g. 2026-04-21T14:00:00+05:30).\n"
+        "  - Use YYYY-MM-DD for all-day events and for date-only updates.\n"
+        "  - For recurring events use RRULE strings (e.g. RRULE:FREQ=WEEKLY;BYDAY=MO).\n"
+        "Target event name extraction rules (CRITICAL — follow exactly):\n"
+        "  Pattern: '[action] [NAME] appointment/event/meeting/schedule' → target_hint = NAME, needs_clarification = false.\n"
+        "  Examples:\n"
+        "    'delete Sample title appointment' → target_hint='Sample title', action='delete_event'\n"
+        "    'remove hello appi event' → target_hint='Hello Appi', action='delete_event'\n"
+        "    'change dentist appointment to friday' → target_hint='Dentist', action='update_event'\n"
+        "  Rule: extract the NAME between the action verb and the word 'appointment/event/meeting' (or end of phrase).\n"
+        "  NEVER set needs_clarification=true when the user has already stated an event name.\n"
+        "  Always set search_query = target_hint for update/delete.\n"
+        "Correction rule: when the user starts their message with 'no', 'not', 'I mean', 'actually', or 'wait' "
+        "after the assistant showed a wrong event, treat it as a NEW target identification for the same action. "
+        "Extract the corrected event name or date from what follows. Do NOT repeat the previous event.\n"
+        "  Example: 'no the one which is on april 1' → keep action='delete_event', set time_min/time_max around April 1, "
+        "set target_hint to whatever event the user described, needs_clarification=false.\n"
+        "Clarification follow-up rule: if RECENT_HISTORY shows the assistant asked about an event, "
+        "the user's reply IS the answer — keep the original action, copy the event title from "
+        "RECENT_HISTORY into both target_hint and search_query. Do NOT ask again. "
+        "Pronoun rule: if the user says 'this', 'it', 'that event', or 'the same one', resolve the "
+        "reference using the most recent event in HISTORY_EVENTS and set target_hint to its title. "
+        "Same-time rule: if the user says 'keep it the same' or 'same time/timing/timings', and "
+        "HISTORY_EVENTS has the event, fill start/end from it. If HISTORY_EVENTS is empty, set "
+        "updates.start to the new date only (YYYY-MM-DD) — do NOT ask for the time."
     )
     user_prompt = (
         f"CURRENT_DATETIME: {now}\n"
         f"AVAILABLE_CALENDARS:\n{calendar_lines}\n\n"
-        f"RECENT_HISTORY:\n{_parse_history(history) or 'none'}\n\n"
-        f"HISTORY_EVENTS (events shown in recent assistant responses — use their times when user says 'keep the same'):\n{history_event_lines}\n\n"
+        + (f"{pending_context}\n\n" if pending_context else "")
+        + f"RECENT_HISTORY:\n{_parse_history(history) or 'none'}\n\n"
+        f"HISTORY_EVENTS (events referenced in recent responses — use their times when user says 'keep the same' or resolving pronouns like 'this'/'it'):\n{history_event_lines}\n\n"
         f"INFERRED_REQUESTED_ACTION: {requested_action}\n\n"
-        f"SIMILAR_SAMPLE_QUESTIONS:\n"
+        "SEMANTICALLY_SIMILAR_QUESTIONS (retrieved by vector search — use these to understand the "
+        "user's intent and choose the correct action and fields):\n"
         + ("\n".join(f"- {question}" for question in similar_questions) or "none")
         + "\n\n"
-        f"ACTION_SPECIFIC_EXAMPLES:\n"
+        "ACTION_EXAMPLES (example phrasings for the inferred action — use these to calibrate "
+        "field extraction such as title, time range, and target event):\n"
         + ("\n".join(f"- {question}" for question in similar_action_samples) or "none")
         + "\n\n"
         "Return JSON with this shape:\n"
@@ -493,7 +623,7 @@ def _rank_events(
     if not events:
         return []
     documents = [_event_to_document(event, calendar_lookup) for event in events]
-    ranked_indices = _rank_texts(query, documents, None, top_k=top_k)
+    ranked_indices = get_vector_store().rank_texts(query, documents, top_k)
     return [(events[index], score) for index, score in ranked_indices]
 
 
@@ -508,8 +638,11 @@ def _select_ranked_event(
 
     top_event, top_score = ranked[0]
     options = [event for event, _ in ranked]
-    # Require a minimum semantic similarity; below this the match is too weak.
-    if top_score < 0.15:
+    if len(events) == 1 and top_score < 0.45:
+        return None, []
+    if top_score < 0.25:
+        return None, options
+    if len(ranked) > 1 and (top_score - ranked[1][1]) < 0.10:
         return None, options
     return top_event, options
 
@@ -582,7 +715,15 @@ def _build_event_body(
             body["start"] = {"date": start_date.isoformat()}
             body["end"] = {"date": end_date.isoformat()}
         else:
-            start_dt = datetime.fromisoformat(start_value.replace("Z", "+00:00"))
+            # Date-only value (no "T"): preserve existing event's time component
+            if "T" not in start_value and existing_event and existing_event.get("start", {}).get("dateTime"):
+                existing_dt = datetime.fromisoformat(
+                    existing_event["start"]["dateTime"].replace("Z", "+00:00")
+                )
+                new_date = date.fromisoformat(start_value[:10])
+                start_dt = existing_dt.replace(year=new_date.year, month=new_date.month, day=new_date.day)
+            else:
+                start_dt = datetime.fromisoformat(start_value.replace("Z", "+00:00"))
             if end_value:
                 end_dt = datetime.fromisoformat(end_value.replace("Z", "+00:00"))
             elif (
@@ -615,9 +756,6 @@ def _answer_from_context(
     client: OllamaClient,
 ) -> str:
     calendar_lookup = {calendar["id"]: calendar for calendar in calendars}
-    question_lines = (
-        "\n".join(f"- {question}" for question in sample_questions[:6]) or "none"
-    )
     event_lines = (
         "\n".join(
             f"- {_format_event_line(event, calendar_lookup)}"
@@ -625,19 +763,30 @@ def _answer_from_context(
         )
         or "none"
     )
+    # Pass only the planner fields relevant to answering — omit internal flags.
+    query_context = {
+        k: plan.get(k)
+        for k in ("action", "search_query", "target_hint", "time_min", "time_max")
+        if plan.get(k)
+    }
     system_prompt = (
-        "You are a helpful Google Calendar assistant. "
-        "Answer the user's question using the RELEVANT_EVENTS list and CURRENT_DATETIME supplied below. "
-        "You may use general knowledge about dates, times, and days of the week. "
-        "If the event list is empty or does not contain enough information to fully answer, say so honestly. "
-        "Never fabricate or guess calendar events that are not in the list. "
-        "Be concise and direct. Format event times in a human-readable way (e.g. 'Monday 14 April at 3 PM')."
+        "You are the answer layer of a Google Calendar assistant. "
+        "The planning layer has already determined the user's intent and fetched the relevant calendar events. "
+        "Your job: answer the user's question using ONLY the RELEVANT_EVENTS list provided. "
+        "Rules:\n"
+        "  - Never fabricate, guess, or invent events that are not in RELEVANT_EVENTS.\n"
+        "  - If RELEVANT_EVENTS is empty or does not contain enough information, say so honestly.\n"
+        "  - You may use general knowledge about dates, times, and days of the week to format your answer.\n"
+        "  - Format event times in a natural, human-readable way (e.g. 'Monday 14 April at 3:00 PM').\n"
+        "  - Be concise and direct. Do not re-list every field of an event unless the user asked for detail.\n"
+        "  - If the user asked to count events, count from RELEVANT_EVENTS only.\n"
+        "  - Use CURRENT_DATETIME to describe how far away events are (e.g. 'tomorrow', 'in 3 days')."
     )
     user_prompt = (
         f"CURRENT_DATETIME: {datetime.now().astimezone().isoformat()}\n"
         f"RECENT_HISTORY:\n{_parse_history(history) or 'none'}\n\n"
-        f"PLANNER_OUTPUT:\n{plan}\n\n"
-        f"SIMILAR_SAMPLE_QUESTIONS (for context only):\n{question_lines}\n\n"
+        f"QUERY_CONTEXT (what the planner resolved — use this to understand what the user is looking for):\n"
+        f"{query_context}\n\n"
         f"RELEVANT_EVENTS:\n{event_lines}\n\n"
         f"USER_MESSAGE: {request_message}"
     )
@@ -674,11 +823,19 @@ def _resolve_target_event(
         if len(contains_title_matches) == 1:
             return contains_title_matches[0], contains_title_matches
 
+        contains_context_matches = [
+            event
+            for event in events
+            if normalized_query in _event_match_text(event).strip().lower()
+        ]
+        if len(contains_context_matches) == 1:
+            return contains_context_matches[0], contains_context_matches
+
     if query_tokens:
         lexical_matches = []
         for event in events:
-            title_tokens = _meaningful_tokens(event.get("title", ""))
-            overlap = len(query_tokens & title_tokens)
+            match_tokens = _meaningful_tokens(_event_match_text(event))
+            overlap = len(query_tokens & match_tokens)
             if overlap:
                 lexical_matches.append((event, overlap))
 
@@ -699,9 +856,6 @@ def _resolve_target_event(
                 if ranked_options:
                     return None, ranked_options
 
-    if len(events) == 1 and query_tokens:
-        return None, events[:1]
-
     return _select_ranked_event(query, events, calendar_lookup)
 
 
@@ -712,6 +866,30 @@ def _build_action_summary(action: str, event: dict, calendars: list[dict]) -> st
         "update_event": f"Updated '{event.get('title')}'.",
         "delete_event": f"Deleted '{event.get('title')}'.",
     }.get(action, "Completed calendar action.")
+
+
+def _build_confirmation_message(action: str, event: dict, body: dict) -> str:
+    title = event.get("title", "this event")
+    if action == "delete_event":
+        start_raw = event.get("start", {}).get("dateTime") or event.get("start", {}).get("date", "")
+        date_str = ""
+        if start_raw:
+            try:
+                dt = datetime.fromisoformat(start_raw.replace("Z", "+00:00"))
+                date_str = f" on {dt.strftime('%a, %d %b at %I:%M %p').lstrip('0')}"
+            except ValueError:
+                pass
+        return f"Delete '{title}'{date_str}? This cannot be undone."
+
+    new_start = body.get("start", {}).get("dateTime") or body.get("start", {}).get("date", "")
+    if new_start:
+        try:
+            dt = datetime.fromisoformat(new_start.replace("Z", "+00:00"))
+            new_start_str = dt.strftime("%a, %d %b at %I:%M %p").lstrip("0")
+        except ValueError:
+            new_start_str = new_start
+        return f"Move '{title}' to {new_start_str}?"
+    return f"Apply these changes to '{title}'?"
 
 
 @router.get("/health")
@@ -757,14 +935,137 @@ def chat(request: Request, payload: ChatRequest):
     # event details (e.g. start/end times when user says "keep it the same").
     history_events = _history_events(payload.history)
 
+    # ── Fast-path: execute a previously confirmed action ────────────────────
+    # When the user says yes/confirm/ok in response to a confirmation message,
+    # we skip LLM planning entirely and execute the pre-built body.
+    if payload.pending_plan and payload.pending_plan.get("confirmed_body") is not None:
+        msg_lower = payload.message.lower().strip()
+        _CONFIRM_KWS = {"yes", "confirm", "confirmed", "ok", "sure", "proceed", "do it", "go ahead", "yep", "yeah", "yup", "correct", "fine"}
+        # Cancel only when the message IS a cancellation — not when "no" appears inside a correction.
+        # e.g. "no" → cancel; "no the one on april 1" → correction, not cancel.
+        _STRICT_CANCEL = {"cancel", "cancelled", "abort", "stop", "skip", "nevermind", "never mind"}
+        _msg_bare = msg_lower.rstrip('.!? ')
+        _is_confirm = any(kw in msg_lower for kw in _CONFIRM_KWS)
+        _is_cancel = (
+            _msg_bare in _STRICT_CANCEL
+            or _msg_bare in {"no", "nope", "don't"}  # standalone only
+            or (len(payload.message.split()) <= 3 and _msg_bare.split()[0] in _STRICT_CANCEL)
+        )
+        if _is_confirm or _is_cancel:
+            if _is_cancel:
+                return {"answer": "Got it, cancelled.", "mode": "answer", "actions": [], "events": [], "plan": {}}
+            pp = payload.pending_plan
+            pp_action = pp.get("action", "")
+            confirmed_body = pp.get("confirmed_body", {})
+            cal_id = pp.get("confirmed_calendar_id", "")
+            event_id = pp.get("confirmed_event_id", "")
+            if pp_action == "update_event" and event_id and confirmed_body:
+                try:
+                    updated = update_event(creds, cal_id, event_id, confirmed_body)
+                except HttpError as exc:
+                    translate_google_api_error(exc)
+                return {
+                    "answer": _build_action_summary("update_event", updated, calendars),
+                    "mode": "action",
+                    "actions": [{"type": "update_event", "calendarId": updated.get("calendarId"), "eventId": updated.get("id")}],
+                    "events": [updated],
+                    "plan": {},
+                }
+            if pp_action == "delete_event" and event_id:
+                event_for_resp = next((e for e in history_events if e.get("id") == event_id), {"id": event_id, "title": "event"})
+                try:
+                    delete_event(creds, cal_id, event_id)
+                except HttpError as exc:
+                    translate_google_api_error(exc)
+                return {
+                    "answer": _build_action_summary("delete_event", event_for_resp, calendars),
+                    "mode": "action",
+                    "actions": [{"type": "delete_event", "calendarId": cal_id, "eventId": event_id}],
+                    "events": [],
+                    "plan": {},
+                }
+    # ── End fast-path ────────────────────────────────────────────────────────
+
     try:
         plan = _plan_chat_action(
-            payload.message, payload.history, history_events, calendars, sample_questions, client
+            payload.message, payload.history, history_events, calendars, sample_questions, client,
+            pending_plan=payload.pending_plan,
         )
     except OllamaClientError as exc:
         raise HTTPException(status_code=503, detail={"message": str(exc)}) from exc
 
     action = plan.get("action", "answer")
+
+    # ── Pending-plan override ────────────────────────────────────────────────
+    # When the user is responding to a clarification (card tap or typed reply),
+    # the frontend echoes back the pending_plan that was attached to the
+    # clarification message.  We use it to restore the original action and
+    # updates so they are never lost across turns.
+    #
+    # Guard: only apply when this message is genuinely a clarification reply.
+    # A new unrelated query (e.g. "list my events") must NOT be hijacked by a
+    # stale pending_plan.  We consider it a clarification reply when:
+    #   (a) the planner itself returned update/delete (it understood the context), OR
+    #   (b) the planner returned "answer" AND the raw message looks like a
+    #       short confirmation / pronoun follow-up (not a fresh question).
+    # Pending plans with confirmed_body are handled above (fast-path), so exclude them here.
+    _has_confirmed_body = bool(payload.pending_plan and payload.pending_plan.get("confirmed_body") is not None)
+    _is_clarification_reply = (
+        not _has_confirmed_body
+        and payload.pending_plan is not None
+        and payload.selected_event_id is not None  # card tap — always a clarification reply
+    ) or (
+        not _has_confirmed_body
+        and payload.pending_plan is not None
+        and action in {"update_event", "delete_event"}  # planner already agreed
+    ) or (
+        not _has_confirmed_body
+        and payload.pending_plan is not None
+        and action == "answer"
+        # Short messages without interrogative/listing keywords are likely
+        # confirmation replies ("yes", "the one on Monday", "I mean X").
+        and len(payload.message.split()) <= 15
+        and not any(
+            kw in payload.message.lower()
+            for kw in ("how many", "list", "show", "what", "which", "when", "count", "do i have", "give me", "tell me")
+        )
+    )
+
+    if _is_clarification_reply:
+        pp = payload.pending_plan  # type: ignore[assignment]
+        pp_action = pp.get("action", "")
+        if pp_action in {"update_event", "delete_event"}:
+            # Restore the mutation action the planner may have misclassified.
+            action = pp_action
+            plan["action"] = action
+            plan["needs_clarification"] = False
+            # Restore updates when the planner left them empty.
+            plan_updates = plan.get("updates") or {}
+            if not any(v for v in plan_updates.values() if v):
+                plan["updates"] = pp.get("updates") or {}
+            # Restore target_hint and time bounds when blank.
+            if not plan.get("target_hint"):
+                plan["target_hint"] = pp.get("target_hint") or ""
+            if not plan.get("time_min"):
+                plan["time_min"] = pp.get("time_min") or ""
+            if not plan.get("time_max"):
+                plan["time_max"] = pp.get("time_max") or ""
+    # ── End pending-plan override ────────────────────────────────────────────
+
+    if (
+        action in {"update_event", "delete_event"}
+        and not plan.get("target_hint")
+        and _PRONOUN_RE.search(payload.message)
+        and history_events
+    ):
+        last_title = history_events[-1].get("title", "")
+        if last_title:
+            plan["target_hint"] = last_title
+            plan["search_query"] = last_title
+
+    if action in {"update_event", "delete_event"} and plan.get("target_hint"):
+        plan["search_query"] = plan["target_hint"]
+
     resolved_calendar_id = _resolve_calendar_id(
         plan.get("calendar_id"), calendars, _default_calendar_id(action, calendars)
     )
@@ -782,13 +1083,27 @@ def chat(request: Request, payload: ChatRequest):
                     calendar_ids=[resolved_calendar_id]
                     if resolved_calendar_id and resolved_calendar_id != "all"
                     else None,
-                    time_min=plan.get("time_min") or (_now - timedelta(days=90)).isoformat(),
+                    q=plan.get("target_hint") or None,
+                    time_min=plan.get("time_min") or (_now - timedelta(days=180)).isoformat(),
                     time_max=plan.get("time_max") or (_now + timedelta(days=365)).isoformat(),
+                )
+                prefetch_target_tokens = _meaningful_tokens(
+                    plan.get("target_hint") or plan.get("search_query") or ""
+                )
+                prefetch_history = (
+                    [
+                        event
+                        for event in history_events
+                        if prefetch_target_tokens
+                        & _meaningful_tokens(event.get("title", ""))
+                    ]
+                    if prefetch_target_tokens
+                    else history_events
                 )
                 target_prefetch, _ = _resolve_target_event(
                     payload.message,
                     plan,
-                    _dedupe_events([*history_events, *prefetch_candidates]),
+                    _dedupe_events([*prefetch_history, *prefetch_candidates]),
                     calendars,
                 )
                 if target_prefetch:
@@ -802,6 +1117,14 @@ def chat(request: Request, payload: ChatRequest):
             "actions": [],
             "events": clarification_events,
             "plan": plan,
+            "pending_plan": {
+                "action": action,
+                "updates": plan.get("updates") or {},
+                "target_hint": plan.get("target_hint") or "",
+                "time_min": plan.get("time_min") or "",
+                "time_max": plan.get("time_max") or "",
+                "calendar_id": resolved_calendar_id or "",
+            } if action in {"update_event", "delete_event"} else None,
         }
 
     # Apply a sensible default time window for answer queries when the LLM did
@@ -821,9 +1144,21 @@ def chat(request: Request, payload: ChatRequest):
     # For update/delete apply a default lookback so past events are reachable.
     _fetch_time_min = plan.get("time_min") or None
     _fetch_time_max = plan.get("time_max") or None
-    if action in {"update_event", "delete_event"} and not _fetch_time_min:
-        _now2 = datetime.now(UTC)
-        _fetch_time_min = (_now2 - timedelta(days=60)).isoformat()
+    if action in {"update_event", "delete_event"}:
+        now_utc = datetime.now(UTC)
+        default_min = (now_utc - timedelta(days=180)).isoformat()
+        default_max = (now_utc + timedelta(days=365)).isoformat()
+        if not _fetch_time_min or _fetch_time_min > default_min:
+            _fetch_time_min = default_min
+        if not _fetch_time_max:
+            _fetch_time_max = default_max
+
+    if action == "answer":
+        q_param = plan.get("search_query") or None
+    elif action in {"update_event", "delete_event"} and plan.get("target_hint"):
+        q_param = plan.get("target_hint")
+    else:
+        q_param = None
 
     try:
         candidate_events, scanned_calendar_ids = fetch_all_events(
@@ -831,7 +1166,7 @@ def chat(request: Request, payload: ChatRequest):
             calendar_ids=[resolved_calendar_id]
             if resolved_calendar_id and resolved_calendar_id != "all"
             else None,
-            q=(plan.get("search_query") or None) if action == "answer" else None,
+            q=q_param,
             time_min=_fetch_time_min,
             time_max=_fetch_time_max,
         )
@@ -842,18 +1177,24 @@ def chat(request: Request, payload: ChatRequest):
         _dedupe_events([*history_events, *candidate_events]), plan
     )
 
-    # Remove holiday/birthday calendar events when the user explicitly asked to.
-    if plan.get("exclude_holiday_calendars"):
-        holiday_calendar_ids = {
-            cal["id"]
-            for cal in calendars
-            if cal.get("isHoliday") or cal.get("isBirthday")
-        }
+    # Remove holiday/birthday calendar events when user asked, OR always for update/delete
+    # (festival events like "Ramadan Start" should never be returned as update/delete targets).
+    _holiday_calendar_ids = {
+        cal["id"]
+        for cal in calendars
+        if cal.get("isHoliday") or cal.get("isBirthday")
+    }
+    if plan.get("exclude_holiday_calendars") or action in {"update_event", "delete_event"}:
         filtered_events = [
             event
             for event in filtered_events
-            if event.get("calendarId") not in holiday_calendar_ids
+            if event.get("calendarId") not in _holiday_calendar_ids
         ]
+        if action in {"update_event", "delete_event"}:
+            history_events = [
+                event for event in history_events
+                if event.get("calendarId") not in _holiday_calendar_ids
+            ]
 
     if action == "answer":
         try:
@@ -927,11 +1268,21 @@ def chat(request: Request, payload: ChatRequest):
         }
 
     if action in {"update_event", "delete_event"}:
-        # If the previous assistant turn was a clarification that already
-        # pinpointed exactly one event, use it directly.  The user's follow-up
-        # reply is providing the requested detail (e.g. "it's on March 4th"),
-        # NOT re-identifying the event — so re-ranking against that text causes
-        # spurious matches (e.g. "12 AM" → token "12" → December birthday event).
+        target_tokens = _meaningful_tokens(
+            plan.get("target_hint") or plan.get("search_query") or ""
+        )
+        relevant_history = (
+            [
+                event
+                for event in history_events
+                if target_tokens & _meaningful_tokens(event.get("title", ""))
+            ]
+            if target_tokens
+            else history_events
+        )
+        all_candidates_pool = _dedupe_events([*relevant_history, *candidate_events])
+
+        # If the previous assistant turn pinpointed exactly one event, use it directly.
         last_assistant_turn = next(
             (t for t in reversed(payload.history) if t.role == "assistant"),
             None,
@@ -944,92 +1295,145 @@ def chat(request: Request, payload: ChatRequest):
         try:
             target_event: Optional[dict] = None
             options: list[dict] = []
-            if clarification_target_id:
+
+            # Priority 1: explicit card selection via selected_event_id
+            if payload.selected_event_id:
                 target_event = next(
-                    (e for e in filtered_events if e.get("id") == clarification_target_id),
+                    (e for e in all_candidates_pool if e.get("id") == payload.selected_event_id),
                     None,
                 )
                 if target_event:
                     options = [target_event]
+
+            # Priority 2: previous clarification pinpointed one event.
+            # Skip when the user is correcting us ("no", "not", "I mean", "actually", etc.)
+            # — in that case the user is re-identifying the event, not confirming the old one.
+            _CORRECTION_STARTERS = ("no ", "no,", "not ", "i mean", "actually", "wait,", "wrong", "that's not", "thats not", "i said")
+            _is_correction = any(payload.message.lower().startswith(s) for s in _CORRECTION_STARTERS) or payload.message.lower().strip() == "no"
+            if not target_event and clarification_target_id and not _is_correction:
+                target_event = next(
+                    (e for e in filtered_events if e.get("id") == clarification_target_id),
+                    None,
+                ) or next(
+                    (e for e in history_events if e.get("id") == clarification_target_id),
+                    None,
+                )
+                if target_event:
+                    options = [target_event]
+
+            # Priority 3: fuzzy/semantic resolution
             if not target_event:
                 target_event, options = _resolve_target_event(
                     payload.message, plan, filtered_events, calendars
                 )
         except OllamaClientError as exc:
             raise HTTPException(status_code=503, detail={"message": str(exc)}) from exc
+
         if not target_event:
-            option_lines = "\n".join(
-                f"- {_format_event_line(event, {calendar['id']: calendar for calendar in calendars})}"
-                for event in options[:3]
-            )
-            message = "I could not identify a single matching event."
-            if option_lines:
-                message += f" Please clarify which one you mean:\n{option_lines}"
+            shown_options = options[:3]
+            n = len(shown_options)
+            if n > 1:
+                msg = (
+                    f"I found {n} possible matches. Tap the correct event:"
+                )
+            elif n == 1:
+                msg = "Found one possible match — tap it to proceed:"
+            else:
+                msg = (
+                    "I couldn't find a matching event. "
+                    "Please check the event title and try again."
+                )
             return {
-                "answer": message,
+                "answer": msg,
                 "mode": "clarification",
                 "actions": [],
-                "events": options[:3],
+                "events": shown_options,
                 "plan": plan,
+                "pending_plan": {
+                    "action": action,
+                    "updates": plan.get("updates") or {},
+                    "target_hint": plan.get("target_hint") or "",
+                    "time_min": plan.get("time_min") or "",
+                    "time_max": plan.get("time_max") or "",
+                    "calendar_id": resolved_calendar_id or "",
+                },
             }
 
+        # ── Delete: always confirm before executing ──────────────────────────
         if action == "delete_event":
-            try:
-                delete_event(creds, target_event["calendarId"], target_event["id"])
-            except HttpError as exc:
-                translate_google_api_error(exc)
             return {
-                "answer": _build_action_summary(action, target_event, calendars),
-                "mode": "action",
-                "actions": [
-                    {
-                        "type": action,
-                        "calendarId": target_event.get("calendarId"),
-                        "eventId": target_event.get("id"),
-                    }
-                ],
+                "answer": _build_confirmation_message("delete_event", target_event, {}),
+                "mode": "confirmation",
+                "actions": [],
                 "events": [target_event],
                 "plan": plan,
+                "pending_plan": {
+                    "action": "delete_event",
+                    "confirmed_event_id": target_event["id"],
+                    "confirmed_calendar_id": target_event["calendarId"],
+                    "confirmed_body": {},
+                },
             }
 
+        # ── Update: build body, then confirm or execute ──────────────────────
         update_payload = plan.get("updates") or {}
-        if not update_payload:
+        if not any(v for v in update_payload.values() if v):
+            # No updates extracted — ask what to change (keep event in context)
             return {
-                "answer": "I found the event, but I still need to know what should change.",
+                "answer": f"What would you like to change about '{target_event.get('title')}'? "
+                          "(e.g. new date, time, title, location)",
                 "mode": "clarification",
                 "actions": [],
                 "events": [target_event],
                 "plan": plan,
+                "pending_plan": {
+                    "action": "update_event",
+                    "updates": {},
+                    "target_hint": target_event.get("title", ""),
+                    "time_min": "",
+                    "time_max": "",
+                    "calendar_id": target_event.get("calendarId", ""),
+                },
             }
 
         body = _build_event_body(update_payload, existing_event=target_event)
         if not body:
             return {
-                "answer": "I found the event, but I could not extract any specific updates to apply.",
+                "answer": f"I couldn't extract valid changes from your request for '{target_event.get('title')}'. "
+                          "Please specify a new date, time, or other field.",
                 "mode": "clarification",
                 "actions": [],
                 "events": [target_event],
                 "plan": plan,
             }
 
-        try:
-            updated = update_event(
-                creds, target_event["calendarId"], target_event["id"], body
-            )
-        except HttpError as exc:
-            translate_google_api_error(exc)
+        # Card-tap (user explicitly selected this event): execute directly.
+        # Text match (bot inferred the event): show confirmation first.
+        if payload.selected_event_id:
+            try:
+                updated = update_event(creds, target_event["calendarId"], target_event["id"], body)
+            except HttpError as exc:
+                translate_google_api_error(exc)
+            return {
+                "answer": _build_action_summary("update_event", updated, calendars),
+                "mode": "action",
+                "actions": [{"type": "update_event", "calendarId": updated.get("calendarId"), "eventId": updated.get("id")}],
+                "events": [updated],
+                "plan": plan,
+            }
+
         return {
-            "answer": _build_action_summary(action, updated, calendars),
-            "mode": "action",
-            "actions": [
-                {
-                    "type": action,
-                    "calendarId": updated.get("calendarId"),
-                    "eventId": updated.get("id"),
-                }
-            ],
-            "events": [updated],
+            "answer": _build_confirmation_message("update_event", target_event, body),
+            "mode": "confirmation",
+            "actions": [],
+            "events": [target_event],
             "plan": plan,
+            "pending_plan": {
+                "action": "update_event",
+                "confirmed_event_id": target_event["id"],
+                "confirmed_calendar_id": target_event["calendarId"],
+                "confirmed_body": body,
+            },
         }
 
     return {

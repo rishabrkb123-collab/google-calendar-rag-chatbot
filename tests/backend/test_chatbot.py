@@ -1,8 +1,10 @@
 from unittest.mock import MagicMock
 
 from backend.chatbot import (
+    _infer_requested_action,
     _load_sample_questions,
     _overlaps_range,
+    _resolve_calendar_id,
     _resolve_target_event,
 )
 
@@ -280,7 +282,7 @@ def test_chat_update_can_resolve_follow_up_from_history_events(client, monkeypat
 
     assert response.status_code == 200
     body = response.json()
-    assert body["mode"] == "action"
+    assert body["mode"] == "confirmation"
     assert body["events"][0]["title"] == "Sample title"
 
 
@@ -344,7 +346,7 @@ def test_chat_delete_does_not_delete_unrelated_event_when_title_does_not_match(
     assert response.status_code == 200
     body = response.json()
     assert body["mode"] == "clarification"
-    assert "could not identify a single matching event" in body["answer"].lower()
+    assert "couldn't find a matching event" in body["answer"].lower()
 
 
 
@@ -516,3 +518,186 @@ def test_chat_answer_does_not_fall_back_to_unrelated_events_when_time_filter_is_
 
     assert response.status_code == 200
     assert response.json()["events"] == []
+
+
+def test_resolve_calendar_id_falls_back_to_default_for_unknown_value():
+    calendars = [
+        {"id": "primary", "name": "Personal", "primary": True},
+        {"id": "work", "name": "Work", "primary": False},
+    ]
+
+    assert _resolve_calendar_id("non-existent-calendar", calendars, "all") == "all"
+
+
+def test_chat_delete_uses_target_hint_query_and_safe_calendar_fallback(
+    client, monkeypatch
+):
+    captured = {}
+
+    monkeypatch.setattr("backend.chatbot.get_tokens", lambda request: {"token": "fake"})
+    monkeypatch.setattr("backend.chatbot.build_credentials", lambda tokens: MagicMock())
+    monkeypatch.setattr(
+        "backend.chatbot.list_calendars",
+        lambda creds: [
+            {"id": "primary", "name": "Personal", "primary": True},
+            {"id": "work", "name": "Work", "primary": False},
+        ],
+    )
+
+    def fake_fetch_all_events(
+        creds, calendar_ids=None, q=None, time_min=None, time_max=None, max_results=250
+    ):
+        captured["calendar_ids"] = calendar_ids
+        captured["q"] = q
+        captured["time_min"] = time_min
+        captured["time_max"] = time_max
+        return ([], ["primary", "work"])
+
+    monkeypatch.setattr("backend.chatbot.fetch_all_events", fake_fetch_all_events)
+    monkeypatch.setattr(
+        "backend.chatbot._load_sample_questions", lambda: ["Delete my appointment"]
+    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "delete_event",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "unknown-calendar",
+        "search_query": "delete my Dr Ravi cleaning appointment",
+        "target_hint": "Dr Ravi cleaning",
+        "time_min": "",
+        "time_max": "",
+        "event": {},
+        "updates": {},
+    }
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+
+    response = client.post(
+        "/chat",
+        json={"message": "delete my Dr Ravi cleaning appointment", "history": []},
+    )
+
+    assert response.status_code == 200
+    assert captured["calendar_ids"] is None
+    assert captured["q"] == "Dr Ravi cleaning"
+    assert captured["time_min"]
+    assert captured["time_max"]
+
+
+def test_chat_update_resolves_pronoun_from_history_event(client, monkeypatch):
+    captured = {}
+    history_event = {
+        "id": "evt-1",
+        "calendarId": "primary",
+        "title": "Root Canal with Dr Ravi",
+        "start": {"dateTime": "2026-04-14T09:00:00+05:30"},
+        "end": {"dateTime": "2026-04-14T10:00:00+05:30"},
+        "description": "",
+        "location": "City Dental",
+        "attendees": [],
+    }
+
+    monkeypatch.setattr("backend.chatbot.get_tokens", lambda request: {"token": "fake"})
+    monkeypatch.setattr("backend.chatbot.build_credentials", lambda tokens: MagicMock())
+    monkeypatch.setattr(
+        "backend.chatbot.list_calendars",
+        lambda creds: [
+            {"id": "primary", "name": "Personal", "primary": True},
+        ],
+    )
+
+    def fake_fetch_all_events(
+        creds, calendar_ids=None, q=None, time_min=None, time_max=None, max_results=250
+    ):
+        captured["q"] = q
+        return ([history_event], ["primary"])
+
+    monkeypatch.setattr("backend.chatbot.fetch_all_events", fake_fetch_all_events)
+    monkeypatch.setattr(
+        "backend.chatbot._load_sample_questions", lambda: ["Move it to tomorrow"]
+    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "update_event",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "primary",
+        "search_query": "",
+        "target_hint": "",
+        "time_min": "",
+        "time_max": "",
+        "event": {},
+        "updates": {
+            "start": "2026-04-15",
+            "all_day": False,
+        },
+    }
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+
+    response = client.post(
+        "/chat",
+        json={
+            "message": "move it to tomorrow",
+            "history": [
+                {
+                    "role": "assistant",
+                    "content": "I found your appointment.",
+                    "events": [history_event],
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "confirmation"
+    assert captured["q"] == "Root Canal with Dr Ravi"
+
+
+def test_infer_requested_action_prefers_delete_over_booking_word():
+    assert _infer_requested_action("cancel my booking for tomorrow") == "delete_event"
+
+
+def test_infer_requested_action_detects_generic_update_queries():
+    assert _infer_requested_action("move my call with Rahul to 5 pm") == "update_event"
+
+
+def test_infer_requested_action_detects_generic_answer_queries():
+    assert _infer_requested_action("what do I have on Friday?") == "answer"
+
+
+def test_resolve_target_event_can_match_by_attendee_and_location():
+    rahul_event = {
+        "id": "evt-1",
+        "calendarId": "primary",
+        "title": "Project sync",
+        "location": "Conference Room A",
+        "description": "Quarterly planning",
+        "organizer": "owner@example.com",
+        "attendees": [{"displayName": "Rahul"}],
+        "start": {"dateTime": "2026-04-14T09:00:00+05:30"},
+        "end": {"dateTime": "2026-04-14T10:00:00+05:30"},
+    }
+    standup_event = {
+        "id": "evt-2",
+        "calendarId": "primary",
+        "title": "Daily standup",
+        "location": "Conference Room B",
+        "description": "Engineering sync",
+        "organizer": "owner@example.com",
+        "attendees": [{"displayName": "Aman"}],
+        "start": {"dateTime": "2026-04-14T11:00:00+05:30"},
+        "end": {"dateTime": "2026-04-14T11:30:00+05:30"},
+    }
+
+    matched_event, options = _resolve_target_event(
+        "move my meeting with Rahul in conference room a",
+        {
+            "target_hint": "Rahul conference room a",
+            "search_query": "Rahul conference room a",
+        },
+        [rahul_event, standup_event],
+        [{"id": "primary", "name": "My Calendar", "primary": True}],
+    )
+
+    assert matched_event == rahul_event
+    assert options == [rahul_event]

@@ -102,8 +102,8 @@ def get_chroma_db_path() -> Path:
 ## Changes to `backend/requirements.txt`
 
 ```
-chromadb==0.5.23
-sentence-transformers==3.4.1
+chromadb>=0.5.0
+sentence-transformers>=2.7.0
 ```
 
 ---

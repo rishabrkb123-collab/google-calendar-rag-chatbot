@@ -1,127 +1,305 @@
-# Google Calendar RAG Chatbot Documentation
+# Google Calendar Agentic Chatbot Documentation
 
-## 1. Project Overview
+## 1. Executive Summary
 
-This project is an agentic Google Calendar assistant. It connects to a user's Google Calendar through OAuth, loads calendar events into a React dashboard, and provides a chat assistant that can answer calendar questions or perform calendar actions such as creating, updating, and deleting events.
+This project is a generic Google Calendar agentic assistant. It is not limited to dentist appointments. It is designed to:
 
-The assistant uses a RAG-style workflow. It combines:
+- connect to a user's Google Calendar with Google OAuth
+- show calendars and events in a React dashboard
+- answer natural-language questions about events
+- create new events
+- update existing events
+- delete events with confirmation
+- identify the correct target event from ambiguous user language
 
-- Live Google Calendar event data
-- A sample question corpus from `google_calendar_rag_1000_questions.txt`
-- Action-specific sample questions from `rag_samples/`
-- An LLM planner and answer generator through Ollama or Groq
-- Retrieval and ranking logic to select relevant calendar events
+The current system uses a retrieval-plus-planning architecture:
 
-No application code was changed for this documentation.
+- live Google Calendar events are fetched at request time
+- sample question corpora are embedded and stored in ChromaDB
+- an LLM plans the requested action and generates the final answer
+- deterministic matching and semantic ranking are combined to identify the right event
 
-## 2. Technology Stack
+The latest state of the project includes:
 
-| Layer | Technology | Where It Is Used | How It Is Used |
+- generic event understanding beyond dentist-specific cases
+- safer event disambiguation for update and delete flows
+- improved pronoun and follow-up handling
+- backend running on `http://localhost:8000`
+- frontend running on `http://localhost:5174`
+- OAuth callback on `http://localhost:8000/auth/callback`
+
+## 2. Current Local Runtime
+
+| Item | Value | Why It Matters |
+|---|---|---|
+| Frontend URL | `http://localhost:5174` | avoids conflict with another project already using `5173` |
+| Backend URL | `http://localhost:8000` | matches the currently working Google OAuth redirect URI |
+| OAuth Callback | `http://localhost:8000/auth/callback` | must exist in Google Cloud Console |
+| Frontend Proxy Target | `http://localhost:8000` | Vite forwards `/auth`, `/api`, and `/chat` to FastAPI |
+| Startup Script | `start.bat` | starts backend and frontend with the correct ports |
+
+## 3. What The System Does
+
+### Main user-facing capabilities
+
+1. Show all calendars available to the authenticated Google user.
+2. Load events across one or more calendars.
+3. Answer questions like:
+   - `What do I have tomorrow?`
+   - `When is my meeting with Rahul?`
+   - `Do I have anything in conference room A this week?`
+4. Create events like:
+   - `Schedule a project sync tomorrow at 4 pm`
+5. Update events like:
+   - `Move my meeting with Rahul to 5 pm`
+   - `Reschedule the planning session to Friday`
+6. Delete events like:
+   - `Cancel my booking tomorrow`
+   - `Remove the lunch with Aman`
+
+### Important design goal
+
+The system should identify events properly for any calendar domain, not only dentist appointments. Dentist workflows can sit on top of the generic engine, but the base event-resolution logic is generic.
+
+## 4. Full Technology Stack
+
+| Layer | Technology | Where Used | Purpose | Why Used |
+|---|---|---|---|---|
+| Frontend UI | React 19 | `frontend/src/` | renders login, dashboard, event list, chat panel, modal | component-based UI with fast iteration |
+| Frontend Router | React Router | `frontend/src/App.jsx` and routing setup | page navigation between login and dashboard | simple SPA routing |
+| Frontend Dev Server | Vite | `frontend/vite.config.js` | local dev server, proxy, build tooling | fast startup and modern React tooling |
+| Styling | Tailwind CSS | `frontend/src/index.css`, component class names | layout, spacing, visual design | utility-first styling with low overhead |
+| Animations | Framer Motion | frontend page/components | animated UI sections and cards | smooth lightweight UI motion |
+| HTTP Client | Axios | `frontend/src/api/client.js` | browser requests to backend with cookies | simple API wrapper and interceptor support |
+| Date Helpers | date-fns | `frontend/src/pages/Dashboard.jsx` | quick filters like today/week/upcoming | practical date arithmetic for UI filters |
+| Backend API | FastAPI | `backend/main.py`, `backend/chatbot.py`, `backend/auth.py` | HTTP API routes and chat endpoints | clear Python API framework with validation |
+| ASGI Server | Uvicorn | `start_backend.bat`, `start.bat`, `render.yaml` | runs FastAPI app | standard FastAPI runtime |
+| Sessions | Starlette SessionMiddleware | `backend/main.py`, `backend/session.py` | stores auth/session data | simple server-side session handling |
+| OAuth | `google-auth`, `google-auth-oauthlib` | `backend/auth.py`, `backend/calendar_api.py` | Google login and token exchange | required for Google Calendar access |
+| Google Calendar API | `google-api-python-client` | `backend/calendar_api.py` | list calendars, fetch events, create, patch, delete | official API client |
+| Env Loading | `python-dotenv` | `backend/config.py` | load `backend/.env` | local configuration management |
+| LLM Provider | Ollama | `backend/ollama_client.py` | planner and answer generation when running local/cloud Ollama-compatible endpoint | low-cost local-first option |
+| Optional Cloud LLM | Groq | `backend/groq_client.py` | planner and answer generation when `GROQ_API_KEY` exists | faster hosted inference |
+| Vector DB | ChromaDB | `backend/vector_store.py`, `backend/chroma_db/` | persistent storage for sample question embeddings | simple local vector storage |
+| Embeddings | Sentence Transformers `all-MiniLM-L6-v2` | `backend/vector_store.py` | semantic embedding for retrieval/ranking | strong lightweight embedding model |
+| Testing Backend | Pytest | `tests/backend/` | backend regression tests | straightforward Python testing |
+| Testing Frontend | Vitest + Testing Library | `frontend/src/**/*.test.jsx` | component and page tests | modern frontend test stack |
+| Deployment | Render | `render.yaml` | production/service deployment | simple full-stack hosting option |
+
+## 5. Which Models Are Used, Where, and Why
+
+### Model table
+
+| Model / Provider | Config Source | Where Used | Purpose |
 |---|---|---|---|
-| Frontend | React | `frontend/src/` | Builds the login page, dashboard, event list, filters, modal, and chat panel. |
-| Frontend Build Tool | Vite | `frontend/vite.config.js`, `frontend/package.json` | Runs the local dev server and builds production frontend assets. |
-| Styling | Tailwind CSS | `frontend/src/index.css`, component class names | Provides utility-first styling for the dashboard and chat UI. |
-| HTTP Client | Axios | `frontend/src/api/client.js` | Sends browser requests to FastAPI and includes session cookies. |
-| UI Animation | Framer Motion | `LoginPage.jsx`, `EventList.jsx`, `FilterPanel.jsx` | Adds simple page, card, and panel animations. |
-| Date Utilities | date-fns | `Dashboard.jsx` | Builds quick filters such as today, week, month, and upcoming. |
-| Backend API | FastAPI | `backend/main.py`, routers | Exposes auth, calendar, event, health, and chat endpoints. |
-| ASGI Server | Uvicorn | `start_backend.bat`, `render.yaml` | Runs the FastAPI application. |
-| Google Auth | google-auth, google-auth-oauthlib | `backend/auth.py`, `backend/calendar_api.py` | Handles OAuth login, token exchange, and credential refresh. |
-| Google Calendar API | google-api-python-client | `backend/calendar_api.py` | Reads calendars/events and performs create, update, delete operations. |
-| Sessions | Starlette SessionMiddleware | `backend/main.py`, `backend/session.py` | Stores OAuth tokens and user data in the session. |
-| Environment Config | python-dotenv | `backend/config.py` | Loads variables from `backend/.env`. |
-| LLM Provider | Ollama | `backend/ollama_client.py` | Local chat and embedding model provider. |
-| Optional Cloud LLM | Groq | `backend/groq_client.py` | Used when `GROQ_API_KEY` is configured. |
-| Testing | Pytest, Vitest, Testing Library | `tests/`, `frontend/src/**/*.test.jsx` | Backend and frontend automated tests. |
-| Deployment | Render | `render.yaml` | Builds frontend and backend, then runs FastAPI as one web service. |
+| `llama3.1:8b` via Ollama | `backend/config.py` default `OLLAMA_CHAT_MODEL` | `backend/chatbot.py` through `OllamaClient` | planning user intent and generating final natural-language answers |
+| `llama-3.3-70b-versatile` via Groq | `backend/config.py` default `GROQ_CHAT_MODEL` when `GROQ_API_KEY` is set | `backend/chatbot.py` through `GroqClient` | optional higher-quality remote planning and answer generation |
+| `all-MiniLM-L6-v2` | hardcoded in `backend/vector_store.py` | `backend/vector_store.py` | embeddings for semantic retrieval over sample questions and event text |
 
-## 3. Main Folder Structure
+### How model selection works
+
+The backend chooses the chat provider dynamically:
+
+```python
+def _build_llm_client():
+    groq_cfg = get_groq_config()
+    if groq_cfg["api_key"]:
+        from backend.groq_client import GroqClient
+        return GroqClient(api_key=groq_cfg["api_key"], chat_model=groq_cfg["chat_model"])
+    cfg = get_ollama_config()
+    return OllamaClient(
+        base_url=cfg["base_url"],
+        chat_model=cfg["chat_model"],
+        api_key=cfg.get("api_key", ""),
+    )
+```
+
+### Why each model exists
+
+| Model Type | Why It Exists |
+|---|---|
+| Chat model | turns free-text user requests into a structured action plan and writes final user-facing answers |
+| Embedding model | compares the user request against sample questions and event text semantically |
+| Vector DB | persists sample question embeddings so they do not need to be rebuilt every request |
+
+## 6. Project Structure
 
 ```text
 .
 |-- backend/
-|   |-- main.py              # FastAPI app setup and calendar API endpoints
-|   |-- auth.py              # Google OAuth login/callback/logout/status
-|   |-- calendar_api.py      # Google Calendar API wrapper functions
-|   |-- chatbot.py           # RAG planner, retrieval, answer, and action logic
-|   |-- config.py            # Environment and model configuration
-|   |-- session.py           # Session token/user helpers
-|   |-- ollama_client.py     # Local Ollama chat and embedding client
-|   |-- groq_client.py       # Optional Groq chat client
+|   |-- main.py
+|   |-- auth.py
+|   |-- calendar_api.py
+|   |-- chatbot.py
+|   |-- config.py
+|   |-- groq_client.py
+|   |-- ollama_client.py
+|   |-- session.py
+|   |-- vector_store.py
+|   |-- .env
+|   |-- .env.example
 |   `-- requirements.txt
 |-- frontend/
 |   |-- src/
-|   |   |-- App.jsx
 |   |   |-- api/client.js
-|   |   |-- context/AuthContext.jsx
-|   |   |-- pages/LoginPage.jsx
-|   |   |-- pages/Dashboard.jsx
-|   |   `-- components/
-|   `-- package.json
-|-- rag_samples/             # Action-specific sample questions
-|-- tests/                   # Backend tests
+|   |   |-- components/
+|   |   |-- context/
+|   |   `-- pages/
+|   |-- package.json
+|   `-- vite.config.js
+|-- rag_samples/
+|-- tests/backend/
 |-- google_calendar_rag_1000_questions.txt
+|-- PROJECT_DOCUMENTATION.md
 |-- render.yaml
 |-- start.bat
+|-- start.ps1
 |-- start_backend.bat
 |-- start_frontend.bat
-`-- start_ollama.bat
+`-- wait_for_backend.ps1
 ```
 
-## 4. High-Level Architecture
+## 7. Main Entry Points
 
-```mermaid
-flowchart LR
-    User[User Browser]
-    React[React + Vite Frontend]
-    FastAPI[FastAPI Backend]
-    Session[Session Store]
-    GoogleOAuth[Google OAuth]
-    CalendarAPI[Google Calendar API]
-    RAG[RAG + Planner Logic]
-    LLM[Ollama or Groq]
-    Samples[Sample Question Files]
+| Entry Point | File | Role |
+|---|---|---|
+| Backend app | `backend/main.py` | creates FastAPI app, middleware, auth routes, chat routes, event routes |
+| Chat logic | `backend/chatbot.py` | planner, retrieval, event selection, create/update/delete logic |
+| Calendar integration | `backend/calendar_api.py` | direct wrapper around Google Calendar API |
+| Frontend app | `frontend/src/main.jsx` | boots the React application |
+| Dashboard | `frontend/src/pages/Dashboard.jsx` | event browsing, filters, manual event operations |
+| Chat UI | `frontend/src/components/ChatPanel.jsx` | sends natural-language requests to `/chat` |
+| Full project startup | `start.bat` | starts backend on `8000` and frontend on `5174` |
 
-    User --> React
-    React --> FastAPI
-    FastAPI --> Session
-    FastAPI --> GoogleOAuth
-    FastAPI --> CalendarAPI
-    FastAPI --> RAG
-    RAG --> LLM
-    RAG --> Samples
-    RAG --> CalendarAPI
-    CalendarAPI --> FastAPI
-    FastAPI --> React
-    React --> User
+## 8. High-Level System Architecture
+
+### Box diagram
+
+```text
++-------------------+         +-------------------------+
+|   User Browser    | <-----> |   React Frontend        |
+|  localhost:5174   |         |  Vite + React + Axios   |
++-------------------+         +-----------+-------------+
+                                            |
+                                            v
+                                +-------------------------+
+                                |   FastAPI Backend       |
+                                |   localhost:8000        |
+                                +-----------+-------------+
+                                            |
+                 +--------------------------+---------------------------+
+                 |                          |                           |
+                 v                          v                           v
+      +-------------------+      +---------------------+      +------------------+
+      | Session / Auth    |      | Chat / Agent Logic  |      | Calendar Routes  |
+      | auth.py/session.py|      | chatbot.py          |      | main.py          |
+      +-------------------+      +----------+----------+      +------------------+
+                                                |
+                         +----------------------+----------------------+
+                         |                                             |
+                         v                                             v
+              +----------------------+                    +----------------------+
+              | LLM Provider         |                    | Retrieval Layer      |
+              | Ollama or Groq       |                    | Chroma + embeddings  |
+              +----------------------+                    +----------+-----------+
+                                                                     |
+                                                                     v
+                                                         +----------------------+
+                                                         | Sample Questions +   |
+                                                         | Event Match Text     |
+                                                         +----------------------+
+                                            |
+                                            v
+                                +-------------------------+
+                                | Google Calendar API     |
+                                +-------------------------+
 ```
 
-Explanation:
-
-The browser runs the React frontend. All authenticated requests go to FastAPI. FastAPI stores Google OAuth tokens in the session and uses those tokens to call Google Calendar. The chat endpoint retrieves calendar data, compares the request against sample questions and events, asks the LLM for a structured plan, and either answers the user or performs a calendar action.
-
-## 5. Authentication Flow
+### Mermaid flowchart
 
 ```mermaid
 flowchart TD
-    A[User opens app] --> B[React LoginPage]
-    B --> C[User clicks Connect Google Calendar]
-    C --> D[GET /auth/login]
-    D --> E[FastAPI creates Google OAuth flow]
-    E --> F[Redirect to Google consent screen]
-    F --> G[Google redirects to /auth/callback]
-    G --> H[Backend exchanges code for tokens]
-    H --> I[Backend stores tokens and user in session]
-    I --> J[Redirect to /dashboard]
-    J --> K[React checks /auth/status]
-    K --> L[Dashboard loads]
+    U[User Browser<br/>localhost:5174] --> F[React Frontend<br/>Dashboard + ChatPanel]
+    F --> B[FastAPI Backend<br/>localhost:8000]
+    B --> S[Session Middleware<br/>OAuth tokens + user]
+    B --> A[Auth Router<br/>Google OAuth]
+    B --> C[Calendar API Wrapper<br/>backend/calendar_api.py]
+    B --> H[Chat Engine<br/>backend/chatbot.py]
+    H --> L[LLM Client<br/>Ollama or Groq]
+    H --> V[Vector Store<br/>ChromaDB + embeddings]
+    V --> Q[Sample Question Files]
+    C --> G[Google Calendar API]
+    A --> G
 ```
 
-Explanation:
+## 9. End-to-End User Query Flow
 
-The frontend does not directly handle Google OAuth tokens. It redirects the user to the backend login route. The backend creates the OAuth URL, receives the callback, exchanges the authorization code for tokens, stores tokens in the session, and redirects the user back to the dashboard.
+### Flowchart
 
-Sample code:
+```mermaid
+flowchart TD
+    A[User enters query in ChatPanel] --> B[POST /chat]
+    B --> C[Validate session]
+    C --> D[List Google calendars]
+    D --> E[Build LLM client]
+    E --> F[Load recent history + history events]
+    F --> G[Retrieve similar sample questions]
+    G --> H[LLM planner returns JSON plan]
+    H --> I{Action}
+    I -->|answer| J[Fetch relevant events]
+    I -->|create_event| K[Build event body]
+    I -->|update_event| L[Resolve target event]
+    I -->|delete_event| M[Resolve target event]
+    J --> N[Rank relevant events]
+    N --> O[LLM answer layer writes response]
+    K --> P[Google Calendar insert]
+    L --> Q[Confirm or patch event]
+    M --> R[Confirm then delete event]
+    O --> S[Return answer + events + actions]
+    P --> S
+    Q --> S
+    R --> S
+```
+
+### Step-by-step explanation
+
+1. The frontend sends the raw user message and recent chat history to `POST /chat`.
+2. The backend validates the session and loads available calendars.
+3. The backend builds an LLM client using Groq if configured, otherwise Ollama.
+4. The retrieval layer loads or queries semantically similar sample questions.
+5. The planner prompt asks the LLM for a strict JSON plan.
+6. The backend normalizes that plan and applies deterministic fixes.
+7. The backend fetches live calendar events from Google Calendar.
+8. The backend resolves the action:
+   - answer: rank relevant events and ask the answer layer to respond
+   - create_event: build a Google event body and insert it
+   - update_event: identify the correct event, build patch body, confirm if needed
+   - delete_event: identify the correct event, confirm, then delete
+9. The API returns the answer text plus any matched events and action metadata.
+
+## 10. Authentication Flow
+
+### Box flow
+
+```text
++--------+     +------------------+     +------------------------+
+|  User  | --> |  /auth/login     | --> | Google Consent Screen  |
++--------+     +------------------+     +------------------------+
+                                                 |
+                                                 v
+                                  +------------------------------+
+                                  | /auth/callback               |
+                                  | exchange code for tokens     |
+                                  +--------------+---------------+
+                                                 |
+                                                 v
+                                  +------------------------------+
+                                  | session saved + redirect to  |
+                                  | frontend dashboard           |
+                                  +------------------------------+
+```
+
+### Code example
 
 ```python
 @router.get("/login")
@@ -135,40 +313,46 @@ def login(request: Request):
     return RedirectResponse(auth_url)
 ```
 
-```jsx
-const handleConnect = () => {
-  window.location.href = '/auth/login'
-}
+```python
+@router.get("/callback")
+def callback(request: Request, code: str, state: str):
+    flow = _make_flow()
+    flow.fetch_token(code=code)
+    credentials = flow.credentials
+    save_tokens(request, tokens, user)
+    return RedirectResponse(f"{frontend_url}/dashboard")
 ```
 
-## 6. Dashboard Event Loading Flow
+### Why this design is used
+
+- keeps Google tokens out of the frontend
+- centralizes OAuth and credential refresh in backend Python code
+- allows the frontend to stay a simpler cookie-based SPA
+
+## 11. Dashboard Event Loading Flow
+
+### Flowchart
 
 ```mermaid
 flowchart TD
-    A[Dashboard mounts] --> B[GET /api/calendars]
-    B --> C[Backend reads Google calendar list]
-    C --> D[Frontend stores available calendars]
-    D --> E[User search/filter state is applied]
-    E --> F[GET /api/events/all]
-    F --> G[Backend fetches events from selected calendars]
-    G --> H[Backend handles pagination per calendar]
-    H --> I[Events are sorted by start time]
-    I --> J[React renders EventList and EventCard]
+    A[Dashboard loads] --> B[GET /api/calendars]
+    B --> C[Store available calendars in React state]
+    C --> D[Apply search text and date filters]
+    D --> E[GET /api/events/all]
+    E --> F[Backend scans selected calendars]
+    F --> G[Google Calendar events.list per calendar]
+    G --> H[Merge and sort events]
+    H --> I[Render EventList, EventCard, filters, modal]
 ```
 
-Explanation:
-
-The dashboard first loads calendar metadata. It excludes holiday and birthday calendars by default when possible. It then calls the all-events endpoint with search text, selected calendars, date range, and quick-filter values. The backend scans the selected calendars and returns a merged event list.
-
-Sample code:
+### Frontend example
 
 ```jsx
 const { data } = await api.get(`/api/events/all?${params.toString()}`)
-const mergedEvents = (data.events ?? []).sort((a, b) =>
-  getEventStartValue(a).localeCompare(getEventStartValue(b))
-)
-setEvents(mergedEvents)
+setEvents(data.events ?? [])
 ```
+
+### Backend example
 
 ```python
 events, scanned_calendar_ids = fetch_all_events(
@@ -181,430 +365,477 @@ events, scanned_calendar_ids = fetch_all_events(
 )
 ```
 
-## 7. Manual Event Management Flow
+### Why this design is used
 
-```mermaid
-flowchart TD
-    A[User clicks event card] --> B{Action}
-    B -->|View| C[Open EventDetailsModal]
-    B -->|Edit| D[Open editable EventDetailsModal]
-    B -->|Delete| E[Confirm delete]
-    C --> F[GET /api/event]
-    D --> F
-    D --> G[PATCH /api/event]
-    E --> H[DELETE /api/event]
-    F --> I[Google Calendar event get]
-    G --> J[Google Calendar event patch]
-    H --> K[Google Calendar event delete]
-    J --> L[Refresh dashboard events]
-    K --> L
-```
+- supports multiple Google calendars in one view
+- keeps the browser simple by centralizing Google API access in the backend
+- allows the same event data path to be reused by the chat engine
 
-Explanation:
+## 12. Generic Event Understanding and Operation Detection
 
-Manual event management is handled through the dashboard and modal components. The modal fetches a fresh copy of the selected event before displaying or editing it. Updates are sent as a patch payload to the backend, which forwards the request to Google Calendar.
+The agent now treats the problem as two separate tasks:
 
-Sample code:
+1. understand what operation the user wants
+2. identify which event the user means
 
-```jsx
-await api.patch(
-  `/api/event?calendarId=${encodeURIComponent(event.calendarId)}&eventId=${encodeURIComponent(event.id)}`,
-  { body: buildRequestBody(form) }
+### Operation detection
+
+The planner and fallback layer classify the request as one of:
+
+- `answer`
+- `create_event`
+- `update_event`
+- `delete_event`
+
+The fallback path uses regex-based action cues for generic calendar language:
+
+```python
+_DELETE_ACTION_RE = re.compile(r"\b(cancel|delete|remove|drop)\b", re.IGNORECASE)
+_UPDATE_ACTION_RE = re.compile(
+    r"\b(update|move|reschedule|change|edit|modify|shift|rename|postpone|delay)\b",
+    re.IGNORECASE,
+)
+_CREATE_ACTION_RE = re.compile(
+    r"\b(create|schedule|book|add|set up|make)\b", re.IGNORECASE
 )
 ```
 
-```python
-@api_router.patch("/event")
-def patch_single_event(
-    request: Request,
-    payload: EventMutationRequest,
-    calendarId: str,
-    eventId: str,
-):
-    tokens = get_tokens(request)
-    if not tokens:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+### Why this matters
 
-    creds = build_credentials(tokens)
-    return update_event(
-        creds, calendar_id=calendarId, event_id=eventId, body=payload.body
-    )
-```
+It prevents common failures such as:
 
-## 8. Chatbot RAG Flow
+- treating `cancel my booking` as create instead of delete
+- treating `move my meeting` as a generic answer request
+- missing generic phrases like `rename`, `postpone`, or `drop`
+
+## 13. Generic Event Identification Flow
+
+### Goal
+
+Correctly identify the intended event across any domain such as:
+
+- meetings
+- dentist appointments
+- follow-ups
+- lunch plans
+- interviews
+- reminders
+- personal bookings
+
+### Matching signals currently used
+
+| Signal | Source | Purpose |
+|---|---|---|
+| exact title match | event title | strongest direct match |
+| partial title match | event title | catches shortened user references |
+| attendee match | attendee names/emails | identifies `meeting with Rahul` |
+| location match | event location | identifies `event in conference room A` |
+| description match | description text | catches contextual references |
+| organizer match | organizer email | useful for externally created events |
+| history event reference | prior assistant event cards | resolves `that one`, `it`, `this event` |
+| semantic ranking | embedding similarity | fallback when lexical match is not enough |
+
+### Event selection flowchart
 
 ```mermaid
 flowchart TD
-    A[User submits message in ChatPanel] --> B[POST /chat]
-    B --> C[Backend validates session tokens]
-    C --> D[Load Google calendars]
-    D --> E[Build LLM client]
-    E --> F[Load sample question corpus]
-    F --> G[Collect recent chat history events]
-    G --> H[Planner ranks similar sample questions]
-    H --> I[LLM returns JSON action plan]
-    I --> J{Action type}
-    J -->|answer| K[Fetch and rank relevant events]
-    J -->|create_event| L[Build Google event body]
-    J -->|update_event| M[Find target event and build patch body]
-    J -->|delete_event| N[Find target event]
-    K --> O[LLM writes answer from retrieved context]
-    L --> P[Google Calendar insert]
-    M --> Q[Google Calendar patch]
-    N --> R[Google Calendar delete]
-    O --> S[Return answer and events]
-    P --> S
-    Q --> S
-    R --> S
+    A[User mutation request] --> B[Extract target_hint/search_query]
+    B --> C[Fetch candidate events from Google Calendar]
+    C --> D[Try exact title match]
+    D --> E{single match?}
+    E -->|yes| Z[select event]
+    E -->|no| F[Try partial title/context match]
+    F --> G{single match?}
+    G -->|yes| Z
+    G -->|no| H[Token overlap on title/location/description/attendees]
+    H --> I{strong single match?}
+    I -->|yes| Z
+    I -->|no| J[Semantic ranking with embeddings]
+    J --> K{high confidence + margin?}
+    K -->|yes| Z
+    K -->|no| L[Ask user to disambiguate]
 ```
 
-Explanation:
+### Event match text example
 
-The chat route works like an agent. It does not directly assume every message is a question. First, it asks the LLM to produce a strict JSON plan. That plan decides whether the user wants an answer, event creation, event update, or event deletion. The backend then performs retrieval and tool execution based on the plan.
+The backend builds richer text for matching, not just the title:
 
-Sample request from frontend:
+```python
+def _event_match_text(event: dict) -> str:
+    attendee_parts = []
+    for attendee in event.get("attendees", []):
+        display_name = attendee.get("displayName") or attendee.get("email", "").split("@")[0]
+        if display_name:
+            attendee_parts.append(display_name)
+    parts = [
+        event.get("title", ""),
+        event.get("location", ""),
+        (event.get("description") or "")[:300],
+        event.get("organizer", ""),
+        " ".join(attendee_parts),
+    ]
+    return " | ".join(part for part in parts if part)
+```
+
+### Why this design is used
+
+- user queries often refer to people, rooms, or context instead of exact titles
+- calendar titles are often incomplete or inconsistent
+- update and delete actions need higher safety than answer-only retrieval
+
+## 14. Confirmation Flow For Dangerous Actions
+
+Delete and most update actions are not executed immediately unless the user selected a specific event card or explicitly confirms.
+
+### Flowchart
+
+```mermaid
+flowchart TD
+    A[Target event identified] --> B{Action type}
+    B -->|delete| C[Show confirmation message]
+    B -->|update| D{user selected event card?}
+    D -->|yes| E[execute patch]
+    D -->|no| F[show confirmation message]
+    C --> G[User says Confirm]
+    F --> G
+    G --> H[Execute Google Calendar mutation]
+```
+
+### Why this design is used
+
+- delete is irreversible
+- update can affect the wrong event if the target was inferred incorrectly
+- confirmation reduces accidental mutation risk
+
+## 15. RAG Architecture
+
+### What data is used in RAG
+
+The system uses two retrieval sources:
+
+1. static sample-question corpus
+   - `google_calendar_rag_1000_questions.txt`
+   - `rag_samples/create_event_questions.txt`
+   - `rag_samples/update_event_questions.txt`
+   - `rag_samples/delete_event_questions.txt`
+   - `rag_samples/general_query_questions.txt`
+
+2. live Google Calendar event data
+   - fetched in real time through Google Calendar API
+   - converted into matchable text at request time
+
+### Important distinction
+
+This is not a classic document RAG system over PDFs or long knowledge bases. It is a hybrid RAG system:
+
+- static corpus retrieval for intent calibration
+- live event retrieval for current factual answers and mutations
+
+## 16. Proper RAG Model Flow
+
+### RAG block diagram
+
+```text
++----------------------+        +-----------------------------+
+| User Message         | -----> | Embed / retrieve similar    |
+| "move my meeting..." |        | sample questions            |
++----------------------+        +--------------+--------------+
+                                               |
+                                               v
+                                  +-----------------------------+
+                                  | Planner LLM                 |
+                                  | returns JSON action plan    |
+                                  +--------------+--------------+
+                                               |
+                                               v
+                                  +-----------------------------+
+                                  | Fetch live calendar events  |
+                                  | from Google Calendar API    |
+                                  +--------------+--------------+
+                                               |
+                                               v
+                                  +-----------------------------+
+                                  | Deterministic + semantic    |
+                                  | event ranking               |
+                                  +--------------+--------------+
+                                               |
+                                               v
+                                  +-----------------------------+
+                                  | Answer LLM or mutation      |
+                                  | execution                   |
+                                  +-----------------------------+
+```
+
+### Mermaid RAG flowchart
+
+```mermaid
+flowchart TD
+    A[User message] --> B[VectorStore seed/query sample questions]
+    B --> C[Planner prompt]
+    C --> D[LLM planner JSON output]
+    D --> E[Google Calendar fetch]
+    E --> F[Build event text documents]
+    F --> G[Lexical + semantic ranking]
+    G --> H{Action}
+    H -->|answer| I[LLM answer from retrieved events]
+    H -->|create| J[build insert body]
+    H -->|update| K[build patch body]
+    H -->|delete| L[confirm then delete]
+```
+
+### Vector store example
+
+```python
+class VectorStore:
+    _MODEL_NAME = "all-MiniLM-L6-v2"
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        return self._model.encode(texts, normalize_embeddings=True).tolist()
+```
+
+### Sample-question retrieval example
+
+```python
+vs = get_vector_store()
+vs.seed_sample_questions(sample_questions)
+similar_questions = vs.query_sample_questions(request_message, top_k=6)
+```
+
+### Event ranking example
+
+```python
+documents = [_event_to_document(event, calendar_lookup) for event in events]
+ranked_indices = get_vector_store().rank_texts(query, documents, top_k)
+```
+
+### Why the current RAG design is used
+
+- sample questions help the planner understand user phrasing patterns
+- live event retrieval ensures answers are based on current calendar state
+- semantic ranking helps when the user does not use the exact event title
+
+## 17. Where The Stack Is Used, With Example Code
+
+### React
+
+Used for the browser UI.
 
 ```jsx
-const { data } = await api.post('/chat', {
-  message,
-  history,
+export default function ChatPanel() {
+  const [messages, setMessages] = useState([STARTER_MESSAGE])
+
+  const sendMessage = async (message) => {
+    const { data } = await api.post('/chat', { message, history })
+    setMessages((current) => [...current, { role: 'assistant', content: data.answer }])
+  }
+}
+```
+
+Purpose:
+
+- user interaction
+- rendering events
+- showing chat and confirmations
+
+Why React:
+
+- reusable components
+- predictable state updates
+- good fit for dashboard plus chat UI
+
+### Axios
+
+Used for browser-to-backend requests.
+
+```javascript
+const api = axios.create({
+  baseURL: '',
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
 })
 ```
 
-Sample planner call:
+Purpose:
+
+- call `/auth`, `/api`, and `/chat`
+- automatically send session cookies
+
+### FastAPI
+
+Used for backend HTTP APIs.
 
 ```python
-plan = _plan_chat_action(
-    payload.message,
-    payload.history,
-    history_events,
-    calendars,
-    sample_questions,
-    client,
+@api_router.get("/events/all")
+def get_all_events(request: Request, q: Optional[str] = None):
+    tokens = get_tokens(request)
+    creds = build_credentials(tokens)
+    events, scanned_calendar_ids = fetch_all_events(creds, q=q)
+    return {"events": events, "calendarsScanned": scanned_calendar_ids}
+```
+
+Purpose:
+
+- API routing
+- request validation
+- chat endpoint orchestration
+
+Why FastAPI:
+
+- simple route design
+- strong typing
+- good fit for Python service code
+
+### Google Calendar API
+
+Used for live event data and mutations.
+
+```python
+def create_event(credentials: Credentials, calendar_id: str, body: dict) -> dict:
+    service = build("calendar", "v3", credentials=credentials)
+    event = service.events().insert(calendarId=calendar_id, body=body).execute()
+    return serialize_event(event, calendar_id)
+```
+
+Purpose:
+
+- real calendar reads and writes
+
+Why used:
+
+- source of truth for actual appointments and events
+
+### ChromaDB + Sentence Transformers
+
+Used for semantic retrieval.
+
+```python
+self._questions_col = self._chroma.get_or_create_collection(
+    "sample_questions",
+    metadata={"hnsw:space": "cosine"},
 )
 ```
 
-## 9. RAG Retrieval Design
+Purpose:
 
-```mermaid
-flowchart LR
-    UserMessage[User Message]
-    Samples[1000 Questions + Action Samples]
-    Events[Live Calendar Events]
-    TokenRank[Lexical Ranking]
-    EmbedRank[Embedding Similarity]
-    TopContext[Relevant Questions and Events]
-    LLMPlanner[LLM Planner]
-    LLMAnswer[LLM Answer Generator]
+- store and query embedded sample questions
 
-    UserMessage --> TokenRank
-    Samples --> TokenRank
-    Events --> TokenRank
-    TokenRank --> EmbedRank
-    UserMessage --> EmbedRank
-    EmbedRank --> TopContext
-    TopContext --> LLMPlanner
-    LLMPlanner --> LLMAnswer
-```
+Why used:
 
-Explanation:
+- faster and more flexible than pure keyword lookup
 
-The retrieval logic uses a hybrid method:
+### Ollama / Groq
 
-- Token overlap provides a fast lexical shortlist.
-- Embeddings compare semantic similarity.
-- Sample questions improve intent recognition.
-- Calendar event documents provide factual grounding.
-
-Events are converted into compact text documents with title, calendar name, start/end time, location, description, and attendees. These documents are ranked against the user's message.
-
-Sample code:
+Used for planning and answer generation.
 
 ```python
-def _event_to_document(event: dict, calendar_lookup: dict[str, dict]) -> str:
-    calendar_name = calendar_lookup.get(event.get("calendarId"), {}).get(
-        "name", event.get("calendarId", "primary")
-    )
-    parts = [
-        f"calendar {calendar_name}",
-        f"title {event.get('title') or '(No title)'}",
-    ]
-    return " | ".join(parts)
+plan = client.chat_json(system_prompt, user_prompt)
+answer = client.chat_text(system_prompt, user_prompt)
 ```
 
-```python
-ranked_indices = _rank_texts(query, documents, client, top_k=top_k)
-return [(events[index], score) for index, score in ranked_indices]
-```
+Purpose:
 
-## 10. Calendar Action Flow
+- convert raw user language into structured action plans
+- produce final conversational answers
 
-```mermaid
-flowchart TD
-    A[User asks to change calendar] --> B[Planner extracts intent]
-    B --> C{Intent}
-    C -->|create_event| D[Validate title and start time]
-    C -->|update_event| E[Retrieve candidate events]
-    C -->|delete_event| F[Retrieve candidate events]
-    D --> G[Build insert body]
-    E --> H[Resolve exact target event]
-    F --> I[Resolve exact target event]
-    H --> J[Build patch body]
-    I --> K[Delete selected event]
-    G --> L[Google Calendar insert]
-    J --> M[Google Calendar patch]
-    K --> N[Google Calendar delete]
-    L --> O[Return action summary]
-    M --> O
-    N --> O
-```
+Why used:
 
-Explanation:
+- LLMs are good at intent extraction and natural response generation
 
-Calendar mutations are guarded. If the request is missing important details or the target event cannot be safely identified, the chatbot returns a clarification instead of changing the wrong event.
+## 18. Current Configuration
 
-Sample code:
-
-```python
-if action == "create_event":
-    event_payload = plan.get("event") or {}
-    if not event_payload.get("title") or not event_payload.get("start"):
-        return {
-            "answer": "I need at least an event title and start time to create that calendar event.",
-            "mode": "clarification",
-            "actions": [],
-            "events": [],
-            "plan": plan,
-        }
-
-    body = _build_event_body(event_payload)
-    created = create_event(creds, resolved_calendar_id or "primary", body)
-```
-
-## 11. Backend API Endpoints
-
-| Endpoint | Method | Purpose |
-|---|---:|---|
-| `/health` | GET | Basic backend health check. |
-| `/debug/env` | GET | Shows OAuth/config loading status for debugging. |
-| `/auth/login` | GET | Starts Google OAuth login. |
-| `/auth/callback` | GET | Receives Google OAuth callback and saves tokens. |
-| `/auth/status` | GET | Returns whether the current session is authenticated. |
-| `/auth/logout` | POST | Clears the session. |
-| `/api/calendars` | GET | Lists Google calendars. |
-| `/api/events` | GET | Lists events from one calendar. |
-| `/api/events/all` | GET | Lists merged events from selected/all calendars. |
-| `/api/event` | GET | Gets one event by calendar ID and event ID. |
-| `/api/event` | PATCH | Updates one event. |
-| `/api/event` | DELETE | Deletes one event. |
-| `/chat/health` | GET | Checks LLM availability and sample question loading. |
-| `/chat` | POST | Runs the agentic RAG chat workflow. |
-
-## 12. Frontend Component Responsibilities
-
-| File | Responsibility |
-|---|---|
-| `frontend/src/App.jsx` | Defines routes and protected dashboard route. |
-| `frontend/src/context/AuthContext.jsx` | Checks auth status and handles logout. |
-| `frontend/src/api/client.js` | Axios instance with cookies and 401 redirect handling. |
-| `frontend/src/pages/LoginPage.jsx` | Google Calendar connect screen. |
-| `frontend/src/pages/Dashboard.jsx` | Main event loading, filters, search, refresh, modal state, and layout. |
-| `frontend/src/components/FilterPanel.jsx` | Quick filters, date range, and calendar selection. |
-| `frontend/src/components/SearchBar.jsx` | Text search input for event filtering. |
-| `frontend/src/components/EventList.jsx` | Loading, error, empty, and event-list rendering. |
-| `frontend/src/components/EventCard.jsx` | Individual event display and view/edit/delete triggers. |
-| `frontend/src/components/EventDetailsModal.jsx` | Full event view/edit/delete modal. |
-| `frontend/src/components/ChatPanel.jsx` | Chat UI, chat history, and `/chat` requests. |
-
-## 13. Configuration
-
-The backend reads configuration from `backend/.env` and fallback defaults in `backend/config.py`.
-
-Common environment variables:
+### Backend environment
 
 ```env
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CLIENT_SECRETS_FILE=credentials.json
 REDIRECT_URI=http://localhost:8000/auth/callback
-FRONTEND_URL=http://localhost:5173
-SECRET_KEY=replace-this-in-production
-
+FRONTEND_URL=http://localhost:5174
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_CHAT_MODEL=llama3.1:8b
-OLLAMA_EMBED_MODEL=nomic-embed-text
-
-GROQ_API_KEY=
-GROQ_CHAT_MODEL=llama-3.3-70b-versatile
-
-RAG_SAMPLE_QUESTIONS_FILE=google_calendar_rag_1000_questions.txt
-RAG_ACTION_SAMPLE_DIR=rag_samples
 ```
 
-LLM provider behavior:
+### Frontend proxy
 
-- If `GROQ_API_KEY` is present, the backend uses `GroqClient`.
-- If `GROQ_API_KEY` is not present, the backend uses `OllamaClient`.
-- Ollama uses a chat model and an embedding model.
-- Groq uses its chat endpoint and a lightweight local bag-of-words embedding fallback for ranking compatibility.
-
-## 14. Embeddings & Vector Search
-
-**Model:** `all-MiniLM-L6-v2` (Sentence Transformers) — runs in-process, no API key required, 384-dimensional normalised vectors. Downloads once (~90 MB) on first run.
-
-**Vector DB:** ChromaDB (embedded, disk-persisted at `backend/chroma_db/`).
-
-**Sample questions corpus** (`google_calendar_rag_1000_questions.txt` + `rag_samples/`):
-Embedded once at first startup and stored in the `sample_questions` ChromaDB collection. Subsequent requests query via ANN (Approximate Nearest Neighbour) search — no re-embedding.
-
-**Calendar event ranking:**
-Event documents are embedded per-request (events are live from Google Calendar API) using the same model. Cosine similarity is computed in-process; no ChromaDB collection is written for events.
-
-**Why all-MiniLM-L6-v2:**
-Free, offline-capable, ~90 MB one-time download. Produces real semantic vectors — "team standup" and "daily sync" score as similar, unlike the previous bag-of-words approach used by the Groq client.
-
-**Key file:** `backend/vector_store.py` — `VectorStore` class wraps ChromaDB + SentenceTransformer; `get_vector_store()` returns the process-wide singleton.
-
-## 15. Local Run Instructions
-
-Install backend dependencies:
-
-```bash
-pip install -r backend/requirements.txt
-```
-
-Install frontend dependencies:
-
-```bash
-npm install --prefix frontend
-```
-
-Pull Ollama models if using local Ollama:
-
-```bash
-ollama pull llama3.1:8b
-ollama pull nomic-embed-text
-```
-
-Run with the project script:
-
-```bat
-start.bat
-```
-
-Or run services separately:
-
-```bat
-start_ollama.bat
-start_backend.bat
-start_frontend.bat
-```
-
-Default URLs:
-
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:8000`
-- OAuth callback: `http://localhost:8000/auth/callback`
-
-## 16. Deployment Flow
-
-```mermaid
-flowchart TD
-    A[Render deploy starts] --> B[pip install backend requirements]
-    B --> C[npm install frontend dependencies]
-    C --> D[npm run build for frontend]
-    D --> E[Start uvicorn backend.main:app]
-    E --> F[FastAPI serves API routes]
-    E --> G[FastAPI serves built React SPA if frontend/dist exists]
-```
-
-Explanation:
-
-`render.yaml` builds both backend and frontend. The frontend build output is placed in `frontend/dist`. In production, `backend/main.py` checks whether that folder exists and serves the React SPA after registering all API routes.
-
-Render configuration:
-
-```yaml
-services:
-  - type: web
-    name: google-calendar-rag-chatbot
-    runtime: python
-    pythonVersion: "3.11.0"
-    buildCommand: "pip install -r backend/requirements.txt && npm install --prefix frontend && npm run build --prefix frontend"
-    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
-```
-
-## 17. Testing
-
-Backend tests are in `tests/backend/` and use Pytest.
-
-Run backend tests:
-
-```bash
-pytest
-```
-
-Frontend tests are colocated with frontend components and use Vitest plus Testing Library.
-
-Run frontend tests:
-
-```bash
-npm run test --prefix frontend
-```
-
-## 18. Important Implementation Notes
-
-- Session cookies are required because OAuth tokens are stored in the backend session.
-- The frontend Axios client uses `withCredentials: true`.
-- The backend CORS configuration allows the configured frontend URL and credentials.
-- Calendar reads and mutations require valid Google OAuth tokens.
-- The chatbot asks clarification questions when an event target or mutation payload is ambiguous.
-- Holiday and birthday calendars are detected so they can be excluded by default or filtered from chat answers when requested.
-- Google Calendar all-day event end dates are exclusive, and the backend accounts for that while checking date overlaps.
-- The sample question files improve intent coverage but do not replace live calendar retrieval.
-
-## 19. End-to-End Request Example
-
-User asks:
-
-```text
-Move my project review meeting to tomorrow at 3 PM.
-```
-
-Flow:
-
-```mermaid
-flowchart LR
-    A[User message] --> B[ChatPanel]
-    B --> C[POST /chat]
-    C --> D[Planner returns update_event]
-    D --> E[Backend fetches candidate events]
-    E --> F[Target resolver selects project review]
-    F --> G[Build patch body with new start/end]
-    G --> H[Google Calendar patch]
-    H --> I[Return updated event]
-    I --> J[ChatPanel displays confirmation]
-```
-
-Expected backend response shape:
-
-```json
-{
-  "answer": "Updated 'Project Review'.",
-  "mode": "action",
-  "actions": [
-    {
-      "type": "update_event",
-      "calendarId": "primary",
-      "eventId": "event-id"
-    }
-  ],
-  "events": [
-    {
-      "id": "event-id",
-      "calendarId": "primary",
-      "title": "Project Review"
-    }
-  ]
+```javascript
+server: {
+  port: 5174,
+  strictPort: true,
+  proxy: {
+    '/auth': 'http://localhost:8000',
+    '/api': 'http://localhost:8000',
+    '/chat': 'http://localhost:8000',
+  },
 }
 ```
+
+### Why these ports are used
+
+- `8000` stays on the original backend OAuth callback that is already valid in Google Cloud Console
+- `5174` avoids collision with another local Vite app that was already using `5173`
+
+## 19. Current Testing State
+
+Latest verified test state during the recent update:
+
+- backend: `45 passed`
+- frontend: `30 passed`
+
+Areas covered include:
+
+- chat planner and answer flow
+- event resolution safety
+- pronoun/history handling
+- calendar fallback behavior
+- frontend chat interactions
+- dashboard loading behavior
+
+## 20. Known Design Characteristics
+
+### Strengths
+
+- uses live Google Calendar as source of truth
+- separates planner and answer layers
+- supports both manual UI actions and natural-language chat actions
+- has safer update/delete confirmation behavior
+- generic event identification is improving beyond title-only matching
+
+### Current limits
+
+- event identification still depends partly on LLM extraction quality
+- there is no separate structured entity schema yet for people/location/time/title hints
+- sample-question RAG helps understanding, but it is not a replacement for deterministic event resolution
+
+## 21. Recommended Next Improvement
+
+The strongest next architectural step is a structured event-reference layer.
+
+Proposed extracted fields:
+
+- `title_hint`
+- `people`
+- `location`
+- `time_range`
+- `calendar_hint`
+- `operation`
+
+That would let the resolver score fields independently instead of relying mainly on one free-text `target_hint`.
+
+## 22. Final Summary
+
+This project is now a generic Google Calendar agentic chatbot with a hybrid RAG architecture.
+
+It uses:
+
+- React + Vite for the frontend
+- FastAPI + Uvicorn for the backend
+- Google OAuth and Google Calendar API for authentication and calendar operations
+- Ollama or Groq for planning and answer generation
+- ChromaDB + `all-MiniLM-L6-v2` for semantic retrieval
+
+The core workflow is:
+
+1. understand the user query
+2. decide the requested operation
+3. retrieve live events and similar sample questions
+4. identify the correct target event using deterministic and semantic signals
+5. answer, create, update, or delete safely
+
+The current architecture is suitable for demos and real-world calendar workflows, and it is now documented around the latest codebase rather than the older narrower dentist-only framing.

@@ -10,10 +10,9 @@ BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent
 ENV_PATH = BACKEND_DIR / ".env"
 DEFAULT_REDIRECT_URI = "http://localhost:8000/auth/callback"
-DEFAULT_FRONTEND_URL = "http://localhost:5173"
+DEFAULT_FRONTEND_URL = "http://localhost:5174"
 DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 DEFAULT_OLLAMA_CHAT_MODEL = "llama3.1:8b"
-DEFAULT_OLLAMA_EMBED_MODEL = "nomic-embed-text"
 DEFAULT_SAMPLE_QUESTIONS_FILE = PROJECT_ROOT / "google_calendar_rag_1000_questions.txt"
 DEFAULT_ACTION_SAMPLE_QUESTIONS_DIR = PROJECT_ROOT / "rag_samples"
 DEFAULT_CHROMA_DB_PATH = BACKEND_DIR / "chroma_db"
@@ -104,8 +103,8 @@ def get_secret_key() -> str:
 def get_ollama_config() -> dict:
     return {
         "base_url": os.getenv("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE_URL),
+        "api_key": os.getenv("OLLAMA_API_KEY", "").strip(),
         "chat_model": os.getenv("OLLAMA_CHAT_MODEL", DEFAULT_OLLAMA_CHAT_MODEL),
-        "embed_model": os.getenv("OLLAMA_EMBED_MODEL", DEFAULT_OLLAMA_EMBED_MODEL),
     }
 
 
