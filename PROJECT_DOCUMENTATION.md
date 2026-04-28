@@ -79,7 +79,6 @@ The system should identify events properly for any calendar domain, not only den
 | Google Calendar API | `google-api-python-client` | `backend/calendar_api.py` | list calendars, fetch events, create, patch, delete | official API client |
 | Env Loading | `python-dotenv` | `backend/config.py` | load `backend/.env` | local configuration management |
 | LLM Provider | Ollama | `backend/ollama_client.py` | planner and answer generation when running local/cloud Ollama-compatible endpoint | low-cost local-first option |
-| Optional Cloud LLM | Groq | `backend/groq_client.py` | planner and answer generation when `GROQ_API_KEY` exists | faster hosted inference |
 | Vector DB | ChromaDB | `backend/vector_store.py`, `backend/chroma_db/` | persistent storage for sample question embeddings | simple local vector storage |
 | Embeddings | Sentence Transformers `all-MiniLM-L6-v2` | `backend/vector_store.py` | semantic embedding for retrieval/ranking | strong lightweight embedding model |
 | Testing Backend | Pytest | `tests/backend/` | backend regression tests | straightforward Python testing |
@@ -92,20 +91,15 @@ The system should identify events properly for any calendar domain, not only den
 
 | Model / Provider | Config Source | Where Used | Purpose |
 |---|---|---|---|
-| `llama3.1:8b` via Ollama | `backend/config.py` default `OLLAMA_CHAT_MODEL` | `backend/chatbot.py` through `OllamaClient` | planning user intent and generating final natural-language answers |
-| `llama-3.3-70b-versatile` via Groq | `backend/config.py` default `GROQ_CHAT_MODEL` when `GROQ_API_KEY` is set | `backend/chatbot.py` through `GroqClient` | optional higher-quality remote planning and answer generation |
+| `deepseek-v3.1:671b-cloud` via Ollama | `backend/.env` `OLLAMA_CHAT_MODEL` and `backend/config.py` default | `backend/chatbot.py` through `OllamaClient` | planning user intent and generating final natural-language answers |
 | `all-MiniLM-L6-v2` | hardcoded in `backend/vector_store.py` | `backend/vector_store.py` | embeddings for semantic retrieval over sample questions and event text |
 
 ### How model selection works
 
-The backend chooses the chat provider dynamically:
+The backend uses the configured Ollama-compatible chat client:
 
 ```python
 def _build_llm_client():
-    groq_cfg = get_groq_config()
-    if groq_cfg["api_key"]:
-        from backend.groq_client import GroqClient
-        return GroqClient(api_key=groq_cfg["api_key"], chat_model=groq_cfg["chat_model"])
     cfg = get_ollama_config()
     return OllamaClient(
         base_url=cfg["base_url"],
@@ -132,7 +126,6 @@ def _build_llm_client():
 |   |-- calendar_api.py
 |   |-- chatbot.py
 |   |-- config.py
-|   |-- groq_client.py
 |   |-- ollama_client.py
 |   |-- session.py
 |   |-- vector_store.py
@@ -200,7 +193,7 @@ def _build_llm_client():
                          v                                             v
               +----------------------+                    +----------------------+
               | LLM Provider         |                    | Retrieval Layer      |
-              | Ollama or Groq       |                    | Chroma + embeddings  |
+              | Ollama-compatible    |                    | Chroma + embeddings  |
               +----------------------+                    +----------+-----------+
                                                                      |
                                                                      v
@@ -225,7 +218,7 @@ flowchart TD
     B --> A[Auth Router<br/>Google OAuth]
     B --> C[Calendar API Wrapper<br/>backend/calendar_api.py]
     B --> H[Chat Engine<br/>backend/chatbot.py]
-    H --> L[LLM Client<br/>Ollama or Groq]
+    H --> L[LLM Client<br/>Ollama-compatible]
     H --> V[Vector Store<br/>ChromaDB + embeddings]
     V --> Q[Sample Question Files]
     C --> G[Google Calendar API]
@@ -265,7 +258,7 @@ flowchart TD
 
 1. The frontend sends the raw user message and recent chat history to `POST /chat`.
 2. The backend validates the session and loads available calendars.
-3. The backend builds an LLM client using Groq if configured, otherwise Ollama.
+3. The backend builds an Ollama-compatible LLM client from `backend/.env`.
 4. The retrieval layer loads or queries semantically similar sample questions.
 5. The planner prompt asks the LLM for a strict JSON plan.
 6. The backend normalizes that plan and applies deterministic fixes.
@@ -723,7 +716,7 @@ Why used:
 
 - faster and more flexible than pure keyword lookup
 
-### Ollama / Groq
+### Ollama-Compatible Chat Model
 
 Used for planning and answer generation.
 
@@ -749,7 +742,7 @@ Why used:
 REDIRECT_URI=http://localhost:8000/auth/callback
 FRONTEND_URL=http://localhost:5174
 OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_CHAT_MODEL=llama3.1:8b
+OLLAMA_CHAT_MODEL=deepseek-v3.1:671b-cloud
 ```
 
 ### Frontend proxy
@@ -827,7 +820,7 @@ It uses:
 - React + Vite for the frontend
 - FastAPI + Uvicorn for the backend
 - Google OAuth and Google Calendar API for authentication and calendar operations
-- Ollama or Groq for planning and answer generation
+- Ollama-compatible chat model for planning and answer generation
 - ChromaDB + `all-MiniLM-L6-v2` for semantic retrieval
 
 The core workflow is:

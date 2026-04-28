@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 from backend.chatbot import (
     _infer_requested_action,
+    _resolve_target_event_with_llm,
     _load_sample_questions,
     _overlaps_range,
     _resolve_calendar_id,
@@ -39,7 +40,7 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
         },
     )
     mock_llm = MagicMock()
-    mock_llm.ensure_ready.return_value = {"models": [{"name": "llama3.1:8b"}]}
+    mock_llm.ensure_ready.return_value = {"models": [{"name": "deepseek-v3.1:671b-cloud"}]}
     monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
 
     response = client.get("/chat/health")
@@ -47,7 +48,7 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert body["sample_questions_loaded"] == 2
-    assert "llama3.1:8b" in body["models"]
+    assert "deepseek-v3.1:671b-cloud" in body["models"]
     assert body["action_sample_counts"]["create_event"] == 1
 
 
@@ -384,6 +385,59 @@ def test_resolve_target_event_can_fall_back_to_semantic_match(monkeypatch):
     assert options == [dentist_event, lunch_event]
 
 
+def test_resolve_target_event_with_llm_uses_all_events_context():
+    dentist_event = {
+        "id": "evt-1",
+        "calendarId": "primary",
+        "title": "Dentist appointment",
+        "start": {"dateTime": "2026-04-14T09:00:00+05:30"},
+        "end": {"dateTime": "2026-04-14T10:00:00+05:30"},
+        "location": "City Dental",
+        "description": "Annual checkup",
+        "attendees": [{"displayName": "Dr Ravi"}],
+    }
+    lunch_event = {
+        "id": "evt-2",
+        "calendarId": "primary",
+        "title": "Lunch with team",
+        "start": {"dateTime": "2026-04-14T12:00:00+05:30"},
+        "end": {"dateTime": "2026-04-14T13:00:00+05:30"},
+        "location": "Cafe",
+        "description": "",
+        "attendees": [],
+    }
+
+    def fake_chat_json(system_prompt, user_prompt):
+        assert "event disambiguation layer" in system_prompt
+        assert "ALL_EVENTS:" in user_prompt
+        assert "Dentist appointment" in user_prompt
+        return {
+            "selected_event_id": "evt-1",
+            "selected_calendar_id": "primary",
+            "confidence": "high",
+            "ambiguous": False,
+            "candidate_event_ids": ["evt-1"],
+        }
+
+    mock_llm = MagicMock()
+    mock_llm.chat_json.side_effect = fake_chat_json
+
+    matched_event, options = _resolve_target_event_with_llm(
+        "delete my checkup with dr ravi",
+        {
+            "action": "delete_event",
+            "target_hint": "checkup dr ravi",
+            "search_query": "checkup dr ravi",
+        },
+        [dentist_event, lunch_event],
+        [{"id": "primary", "name": "My Calendar", "primary": True}],
+        mock_llm,
+    )
+
+    assert matched_event == dentist_event
+    assert options == [dentist_event]
+
+
 def test_overlaps_range_treats_all_day_end_date_as_exclusive():
     event = {
         "id": "holiday-1",
@@ -651,6 +705,95 @@ def test_chat_update_resolves_pronoun_from_history_event(client, monkeypatch):
     assert response.status_code == 200
     assert response.json()["mode"] == "confirmation"
     assert captured["q"] == "Root Canal with Dr Ravi"
+
+
+def test_chat_delete_can_use_llm_with_full_event_list_to_identify_target(
+    client, monkeypatch
+):
+    dentist_event = {
+        "id": "evt-1",
+        "calendarId": "primary",
+        "title": "Dentist appointment",
+        "start": {"dateTime": "2026-04-14T09:00:00+05:30"},
+        "end": {"dateTime": "2026-04-14T10:00:00+05:30"},
+        "description": "Annual checkup with Dr Ravi",
+        "location": "City Dental",
+        "attendees": [{"displayName": "Dr Ravi"}],
+    }
+    lunch_event = {
+        "id": "evt-2",
+        "calendarId": "primary",
+        "title": "Lunch with team",
+        "start": {"dateTime": "2026-04-14T12:00:00+05:30"},
+        "end": {"dateTime": "2026-04-14T13:00:00+05:30"},
+        "description": "",
+        "location": "Cafe",
+        "attendees": [],
+    }
+
+    monkeypatch.setattr("backend.chatbot.get_tokens", lambda request: {"token": "fake"})
+    monkeypatch.setattr("backend.chatbot.build_credentials", lambda tokens: MagicMock())
+    monkeypatch.setattr(
+        "backend.chatbot.list_calendars",
+        lambda creds: [{"id": "primary", "name": "My Calendar", "primary": True}],
+    )
+    monkeypatch.setattr(
+        "backend.chatbot.fetch_all_events",
+        lambda creds, calendar_ids=None, q=None, time_min=None, time_max=None, max_results=250: (
+            [dentist_event, lunch_event],
+            ["primary"],
+        ),
+    )
+    monkeypatch.setattr(
+        "backend.chatbot._load_sample_questions", lambda: ["Delete my appointment"]
+    )
+    monkeypatch.setattr(
+        "backend.chatbot._rank_events",
+        lambda query, events, calendar_lookup, top_k: [
+            (dentist_event, 0.20),
+            (lunch_event, 0.19),
+        ],
+    )
+
+    def fake_chat_json(system_prompt, user_prompt):
+        if "planning layer" in system_prompt:
+            return {
+                "action": "delete_event",
+                "needs_clarification": False,
+                "clarification_question": "",
+                "calendar_id": "primary",
+                "search_query": "checkup",
+                "target_hint": "checkup",
+                "time_min": "",
+                "time_max": "",
+                "event": {},
+                "updates": {},
+            }
+        assert "event disambiguation layer" in system_prompt
+        assert "ALL_EVENTS:" in user_prompt
+        assert "Dentist appointment" in user_prompt
+        return {
+            "selected_event_id": "evt-1",
+            "selected_calendar_id": "primary",
+            "confidence": "high",
+            "ambiguous": False,
+            "candidate_event_ids": ["evt-1"],
+        }
+
+    mock_llm = MagicMock()
+    mock_llm.chat_json.side_effect = fake_chat_json
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+
+    response = client.post(
+        "/chat",
+        json={"message": "delete my checkup with dr ravi", "history": []},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "confirmation"
+    assert body["events"][0]["id"] == "evt-1"
+    assert body["events"][0]["title"] == "Dentist appointment"
 
 
 def test_infer_requested_action_prefers_delete_over_booking_word():

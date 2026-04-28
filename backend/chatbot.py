@@ -19,7 +19,6 @@ from backend.calendar_api import (
 from backend.config import (
     DEFAULT_SAMPLE_QUESTIONS_FILE,
     get_action_sample_questions_dir,
-    get_groq_config,
     get_ollama_config,
     get_sample_questions_path,
 )
@@ -33,11 +32,7 @@ router = APIRouter(prefix="/chat")
 
 
 def _build_llm_client():
-    """Return a GroqClient when GROQ_API_KEY is set, otherwise OllamaClient."""
-    groq_cfg = get_groq_config()
-    if groq_cfg["api_key"]:
-        from backend.groq_client import GroqClient
-        return GroqClient(api_key=groq_cfg["api_key"], chat_model=groq_cfg["chat_model"])
+    """Return the configured Ollama-compatible chat client."""
     cfg = get_ollama_config()
     return OllamaClient(
         base_url=cfg["base_url"],
@@ -234,6 +229,40 @@ def _format_event_line(event: dict, calendar_lookup: dict[str, dict]) -> str:
     )
     end = event.get("end", {}).get("dateTime") or event.get("end", {}).get("date") or ""
     return f"[{calendar_name}] {event.get('title', '(No title)')} | {start} -> {end} | {event.get('location', '')}".strip()
+
+
+def _format_event_context_line(event: dict, calendar_lookup: dict[str, dict]) -> str:
+    calendar_id = event.get("calendarId", "primary")
+    calendar_name = calendar_lookup.get(calendar_id, {}).get("name", calendar_id)
+    start = (
+        event.get("start", {}).get("dateTime")
+        or event.get("start", {}).get("date")
+        or ""
+    )
+    end = event.get("end", {}).get("dateTime") or event.get("end", {}).get("date") or ""
+    attendee_names = []
+    for attendee in event.get("attendees", []):
+        attendee_name = attendee.get("displayName") or attendee.get("email", "")
+        if attendee_name:
+            attendee_names.append(attendee_name)
+    description = (event.get("description") or "").strip().replace("\n", " ")
+    parts = [
+        f"id={event.get('id', '')}",
+        f"calendar_id={calendar_id}",
+        f"calendar_name={calendar_name}",
+        f"title={event.get('title', '(No title)')}",
+    ]
+    if start:
+        parts.append(f"start={start}")
+    if end:
+        parts.append(f"end={end}")
+    if event.get("location"):
+        parts.append(f"location={event.get('location')}")
+    if attendee_names:
+        parts.append(f"attendees={', '.join(attendee_names[:8])}")
+    if description:
+        parts.append(f"description={description[:220]}")
+    return " | ".join(parts)
 
 
 def _event_match_text(event: dict) -> str:
@@ -859,6 +888,98 @@ def _resolve_target_event(
     return _select_ranked_event(query, events, calendar_lookup)
 
 
+def _resolve_target_event_with_llm(
+    request_message: str,
+    plan: dict[str, Any],
+    events: list[dict],
+    calendars: list[dict],
+    client: OllamaClient,
+) -> tuple[Optional[dict], list[dict]]:
+    if not events:
+        return None, []
+
+    calendar_lookup = {calendar["id"]: calendar for calendar in calendars}
+    event_lookup = {
+        (event.get("calendarId", "primary"), event.get("id", "")): event
+        for event in events
+    }
+    event_lines = "\n".join(
+        f"- {_format_event_context_line(event, calendar_lookup)}" for event in events
+    )
+    query_context = {
+        key: plan.get(key)
+        for key in ("action", "search_query", "target_hint", "time_min", "time_max")
+        if plan.get(key)
+    }
+    system_prompt = (
+        "You are the event disambiguation layer of a Google Calendar assistant. "
+        "Your only job is to identify which existing calendar event the user is referring to. "
+        "You must choose ONLY from the ALL_EVENTS list provided and return strict JSON only. "
+        "Rules:\n"
+        "  - Never invent an event, title, ID, or calendar.\n"
+        "  - Prefer the strongest match based on title, date, time, attendee, location, and description.\n"
+        "  - If one event is clearly the best match, set ambiguous=false and confidence=high or medium.\n"
+        "  - If multiple events remain plausible, set ambiguous=true and return up to 3 candidate_event_ids.\n"
+        "  - If nothing matches, leave selected_event_id empty and return ambiguous=true.\n"
+        "Return JSON with this shape:\n"
+        '{'
+        '"selected_event_id": "", '
+        '"selected_calendar_id": "", '
+        '"confidence": "high|medium|low", '
+        '"ambiguous": false, '
+        '"candidate_event_ids": []'
+        '}'
+    )
+    user_prompt = (
+        f"CURRENT_DATETIME: {datetime.now().astimezone().isoformat()}\n"
+        f"USER_MESSAGE: {request_message}\n\n"
+        f"QUERY_CONTEXT:\n{query_context}\n\n"
+        f"ALL_EVENTS:\n{event_lines}"
+    )
+
+    try:
+        decision = client.chat_json(system_prompt, user_prompt)
+    except OllamaClientError:
+        return None, []
+
+    if not isinstance(decision, dict):
+        return None, []
+
+    selected_event: Optional[dict] = None
+    selected_event_id = str(decision.get("selected_event_id") or "").strip()
+    selected_calendar_id = str(decision.get("selected_calendar_id") or "").strip()
+    if selected_event_id and selected_calendar_id:
+        selected_event = event_lookup.get((selected_calendar_id, selected_event_id))
+    if not selected_event and selected_event_id:
+        selected_event = next(
+            (event for event in events if event.get("id") == selected_event_id),
+            None,
+        )
+
+    raw_candidate_ids = decision.get("candidate_event_ids") or []
+    if isinstance(raw_candidate_ids, str):
+        raw_candidate_ids = [raw_candidate_ids]
+    option_ids = [
+        str(candidate_id).strip()
+        for candidate_id in raw_candidate_ids
+        if str(candidate_id).strip()
+    ]
+    options = [
+        event for event in events if event.get("id") in option_ids
+    ]
+    if selected_event and all(
+        option.get("id") != selected_event.get("id") for option in options
+    ):
+        options = [selected_event, *options]
+
+    confidence = str(decision.get("confidence") or "").strip().lower()
+    ambiguous = bool(decision.get("ambiguous"))
+    if selected_event and not ambiguous and confidence in {"high", "medium"}:
+        return selected_event, options or [selected_event]
+
+    return None, options[:3]
+
+
 def _build_action_summary(action: str, event: dict, calendars: list[dict]) -> str:
     calendar_lookup = {calendar["id"]: calendar for calendar in calendars}
     return {
@@ -900,11 +1021,9 @@ def health():
     except OllamaClientError as exc:
         raise HTTPException(status_code=503, detail={"message": str(exc)}) from exc
 
-    groq_cfg = get_groq_config()
-    config = {"provider": "groq", "model": groq_cfg["chat_model"]} if groq_cfg["api_key"] else get_ollama_config()
     return {
         "status": "ok",
-        "llm": config,
+        "llm": get_ollama_config(),
         "models": [model.get("name") for model in tags.get("models", [])],
         "sample_questions_loaded": len(_load_sample_questions()),
         "sample_questions_path": str(get_sample_questions_path()),
@@ -1326,6 +1445,19 @@ def chat(request: Request, payload: ChatRequest):
                 target_event, options = _resolve_target_event(
                     payload.message, plan, filtered_events, calendars
                 )
+            if not target_event:
+                llm_target_event, llm_options = _resolve_target_event_with_llm(
+                    payload.message,
+                    plan,
+                    all_candidates_pool,
+                    calendars,
+                    client,
+                )
+                if llm_target_event:
+                    target_event = llm_target_event
+                    options = [llm_target_event]
+                elif llm_options:
+                    options = _dedupe_events([*llm_options, *options])
         except OllamaClientError as exc:
             raise HTTPException(status_code=503, detail={"message": str(exc)}) from exc
 

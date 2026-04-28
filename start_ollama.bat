@@ -4,10 +4,9 @@ setlocal
 where ollama >nul 2>&1
 if errorlevel 1 (
     echo Ollama CLI was not found.
-    echo Install Ollama from https://ollama.com/download and pull the required models.
-    echo Required models:
-    echo   ollama pull llama3.1:8b
-    echo   ollama pull nomic-embed-text:latest
+    echo Install Ollama from https://ollama.com/download.
+    echo This project uses an Ollama cloud chat model configured in backend\.env
+    echo and local Sentence Transformers embeddings loaded by the Python backend.
     echo.
     echo Press any key to close this window.
     pause >nul

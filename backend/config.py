@@ -12,7 +12,7 @@ ENV_PATH = BACKEND_DIR / ".env"
 DEFAULT_REDIRECT_URI = "http://localhost:8000/auth/callback"
 DEFAULT_FRONTEND_URL = "http://localhost:5174"
 DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
-DEFAULT_OLLAMA_CHAT_MODEL = "llama3.1:8b"
+DEFAULT_OLLAMA_CHAT_MODEL = "deepseek-v3.1:671b-cloud"
 DEFAULT_SAMPLE_QUESTIONS_FILE = PROJECT_ROOT / "google_calendar_rag_1000_questions.txt"
 DEFAULT_ACTION_SAMPLE_QUESTIONS_DIR = PROJECT_ROOT / "rag_samples"
 DEFAULT_CHROMA_DB_PATH = BACKEND_DIR / "chroma_db"
@@ -105,13 +105,6 @@ def get_ollama_config() -> dict:
         "base_url": os.getenv("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE_URL),
         "api_key": os.getenv("OLLAMA_API_KEY", "").strip(),
         "chat_model": os.getenv("OLLAMA_CHAT_MODEL", DEFAULT_OLLAMA_CHAT_MODEL),
-    }
-
-
-def get_groq_config() -> dict:
-    return {
-        "api_key": os.getenv("GROQ_API_KEY", "").strip(),
-        "chat_model": os.getenv("GROQ_CHAT_MODEL", "llama-3.3-70b-versatile"),
     }
 
 
