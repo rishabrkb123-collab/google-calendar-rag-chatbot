@@ -10,17 +10,15 @@ import threading
 from pathlib import Path
 
 import chromadb
-from sentence_transformers import SentenceTransformer
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
 
 class VectorStore:
     """Semantic search over calendar events and sample questions."""
 
-    _MODEL_NAME = "all-MiniLM-L6-v2"
-
     def __init__(self, db_path: Path) -> None:
         db_path.mkdir(parents=True, exist_ok=True)
-        self._model = SentenceTransformer(self._MODEL_NAME)
+        self._embed_fn = DefaultEmbeddingFunction()
         self._chroma = chromadb.PersistentClient(path=str(db_path))
         self._questions_col = self._chroma.get_or_create_collection(
             "sample_questions",
@@ -32,10 +30,9 @@ class VectorStore:
     # ── Embedding ─────────────────────────────────────────────────────────────
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        """Return a unit-length 384-dim vector for each text."""
         if not texts:
             return []
-        return self._model.encode(texts, normalize_embeddings=True).tolist()
+        return self._embed_fn(texts)
 
     # ── Sample questions (persistent ChromaDB collection) ─────────────────────
 
