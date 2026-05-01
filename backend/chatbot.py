@@ -32,12 +32,11 @@ router = APIRouter(prefix="/chat")
 
 
 def _build_llm_client():
-    """Return the configured Ollama-compatible chat client."""
     cfg = get_ollama_config()
     return OllamaClient(
         base_url=cfg["base_url"],
         chat_model=cfg["chat_model"],
-        api_key=cfg.get("api_key", ""),
+        api_key=cfg["api_key"],
     )
 
 STOPWORDS = {
@@ -82,22 +81,120 @@ STOPWORDS = {
     "with",
 }
 
+GENERIC_TARGET_TOKENS = {
+    "appointment",
+    "appointmnt",
+    "booking",
+    "check",
+    "checkup",
+    "event",
+    "general",
+    "meeting",
+    "reminder",
+    "routine",
+    "schedule",
+}
+
 _PRONOUN_RE = re.compile(
     r"\b(it|this|that|the same one?|that one|the event|that event|this event)\b",
     re.IGNORECASE,
 )
-_DELETE_ACTION_RE = re.compile(r"\b(cancel|delete|remove|drop)\b", re.IGNORECASE)
+_DELETE_ACTION_RE = re.compile(
+    r"\b(cancel|cancelled|delete|deleted|remove|removed|drop|dropped)\b",
+    re.IGNORECASE,
+)
 _UPDATE_ACTION_RE = re.compile(
-    r"\b(update|move|reschedule|change|edit|modify|shift|rename|postpone|delay)\b",
+    r"\b(update|updated|move|moved|reschedule|rescheduled|change|changed|edit|edited|modify|modified|shift|shifted|rename|renamed|postpone|postponed|delay|delayed)\b",
     re.IGNORECASE,
 )
 _CREATE_ACTION_RE = re.compile(
-    r"\b(create|schedule|book|add|set up|make)\b", re.IGNORECASE
+    r"\b(create|created|schedule|scheduled|book|booked|add|added|set up|make|made)\b",
+    re.IGNORECASE,
 )
 _ANSWER_ACTION_RE = re.compile(
     r"\b(what|when|which|who|list|show|find|search|count|availability|available|am i free|do i have|free slot|free time)\b",
     re.IGNORECASE,
 )
+_FIELD_REPLY_RE = re.compile(
+    r"\b(date|day|time|timing|timings|title|name|location|place|description|details)\b",
+    re.IGNORECASE,
+)
+_SAME_TIME_RE = re.compile(
+    r"\b(same time|same timing|same timings|keep (?:it )?the same time|with the same time)\b",
+    re.IGNORECASE,
+)
+_MONTH_NAME_LOOKUP = {
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
+    "may": 5,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
+}
+_WEEKDAY_LOOKUP = {
+    "monday": 0,
+    "tuesday": 1,
+    "wednesday": 2,
+    "thursday": 3,
+    "friday": 4,
+    "saturday": 5,
+    "sunday": 6,
+}
+_CORRECTION_STARTERS = (
+    "no ",
+    "no,",
+    "not ",
+    "i mean",
+    "actually",
+    "wait",
+    "wrong",
+    "that's not",
+    "thats not",
+    "i said",
+)
+_FOLLOW_UP_CONFIRM_KWS = {
+    "yes",
+    "ok",
+    "okay",
+    "confirm",
+    "confirmed",
+    "sure",
+    "correct",
+    "go ahead",
+    "do it",
+    "yep",
+    "yeah",
+    "yup",
+}
+_FOLLOW_UP_CANCEL_KWS = {
+    "cancel",
+    "cancelled",
+    "abort",
+    "stop",
+    "skip",
+    "nevermind",
+    "never mind",
+    "no",
+    "nope",
+}
 
 ACTION_SAMPLE_GROUPS = ("create_event", "update_event", "delete_event")
 
@@ -106,6 +203,7 @@ class ChatTurn(BaseModel):
     role: str
     content: str
     events: list[dict] = Field(default_factory=list)
+    mode: Optional[str] = None
 
 
 class ChatRequest(BaseModel):
@@ -114,6 +212,7 @@ class ChatRequest(BaseModel):
     # When the user taps a suggested event card in the UI, the frontend passes
     # the event's ID here so the backend can skip fuzzy matching entirely.
     selected_event_id: Optional[str] = None
+    selected_calendar_id: Optional[str] = None
     # The frontend echoes the pending_plan from the last clarification response
     # so the original action + updates survive across clarification turns.
     pending_plan: Optional[dict] = None
@@ -127,6 +226,281 @@ def _meaningful_tokens(text: str) -> set[str]:
     return {
         token for token in _tokenize(text) if token not in STOPWORDS and len(token) > 1
     }
+
+
+def _distinctive_tokens(text: str) -> set[str]:
+    return {
+        token for token in _meaningful_tokens(text) if token not in GENERIC_TARGET_TOKENS
+    }
+
+
+def _is_generic_target_text(text: str) -> bool:
+    normalized = text.strip().lower()
+    if _PRONOUN_RE.fullmatch(normalized):
+        return True
+    tokens = _meaningful_tokens(text)
+    if not tokens:
+        return True
+    return not any(token not in GENERIC_TARGET_TOKENS for token in tokens)
+
+
+def _message_starts_with_correction(message: str) -> bool:
+    lowered = message.lower().strip()
+    return lowered == "no" or any(lowered.startswith(prefix) for prefix in _CORRECTION_STARTERS)
+
+
+def _likely_follow_up_message(
+    message: str,
+    pending_plan: Optional[dict],
+    selected_event_id: Optional[str] = None,
+) -> bool:
+    if not pending_plan or pending_plan.get("action") not in {"update_event", "delete_event"}:
+        return False
+    if selected_event_id:
+        return True
+
+    lowered = message.lower().strip()
+    if not lowered:
+        return False
+    if lowered in _FOLLOW_UP_CONFIRM_KWS or lowered in _FOLLOW_UP_CANCEL_KWS:
+        return True
+    if _message_starts_with_correction(message):
+        return True
+    if _PRONOUN_RE.search(message) or _FIELD_REPLY_RE.search(message) or _SAME_TIME_RE.search(message):
+        return True
+
+    inferred_action = _infer_requested_action(message)
+    if inferred_action == "create_event":
+        return False
+    if inferred_action == "answer" and (
+        message.strip().endswith("?") or _ANSWER_ACTION_RE.search(message)
+    ):
+        return False
+    if inferred_action == pending_plan.get("action"):
+        return True
+    return len(message.split()) <= 12
+
+
+def _clean_capture(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip(" \t\n\r\"'.,:;-")
+
+
+def _extract_explicit_date(message: str, now: Optional[datetime] = None) -> Optional[date]:
+    reference = (now or datetime.now().astimezone()).date()
+    lowered = message.lower()
+
+    if re.search(r"\btoday\b", lowered):
+        return reference
+    if re.search(r"\btomorrow\b", lowered):
+        return reference + timedelta(days=1)
+
+    next_weekday_match = re.search(
+        r"\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+        lowered,
+    )
+    if next_weekday_match:
+        weekday = _WEEKDAY_LOOKUP[next_weekday_match.group(1)]
+        days_ahead = (weekday - reference.weekday()) % 7
+        if days_ahead == 0:
+            days_ahead = 7
+        return reference + timedelta(days=days_ahead)
+
+    for pattern in (
+        re.compile(
+            r"\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sept|sep|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:st|nd|rd|th)?\b",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sept|sep|october|oct|november|nov|december|dec)\b",
+            re.IGNORECASE,
+        ),
+    ):
+        match = pattern.search(message)
+        if not match:
+            continue
+        if match.re.pattern.startswith("\\b(january"):
+            month_name, day_value = match.group(1), match.group(2)
+        else:
+            day_value, month_name = match.group(1), match.group(2)
+        month = _MONTH_NAME_LOOKUP[month_name.lower()]
+        day = int(day_value)
+        candidate = date(reference.year, month, day)
+        if candidate < reference - timedelta(days=1):
+            candidate = date(reference.year + 1, month, day)
+        return candidate
+
+    return None
+
+
+def _extract_explicit_time(message: str) -> Optional[tuple[int, int]]:
+    twelve_hour = re.search(
+        r"\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b",
+        message,
+        re.IGNORECASE,
+    )
+    if twelve_hour:
+        hour = int(twelve_hour.group(1)) % 12
+        minute = int(twelve_hour.group(2) or 0)
+        meridiem = twelve_hour.group(3).lower()
+        if meridiem == "pm":
+            hour += 12
+        return hour, minute
+
+    twenty_four_hour = re.search(r"\b(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\b", message)
+    if twenty_four_hour:
+        return int(twenty_four_hour.group(1)), int(twenty_four_hour.group(2))
+    return None
+
+
+def _combine_date_and_time(
+    date_value: date,
+    time_value: tuple[int, int],
+    reference_tz,
+) -> str:
+    tzinfo = reference_tz or datetime.now().astimezone().tzinfo
+    return datetime.combine(
+        date_value,
+        datetime.min.time().replace(hour=time_value[0], minute=time_value[1]),
+        tzinfo=tzinfo,
+    ).isoformat()
+
+
+def _extract_create_title(message: str) -> str:
+    patterns = [
+        re.compile(
+            r"\bfor\s+(.+?)(?=\s+(?:on|at|tomorrow|today|next)\b|$)",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\b(?:called|named|titled)\s+(.+?)(?=\s+(?:on|at|tomorrow|today|next)\b|$)",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\b(?:create|schedule|book|add|set up|make)\s+(?:an?\s+)?(?:event|appointment|meeting|reminder)?\s*(.+?)(?=\s+(?:on|at|tomorrow|today|next)\b|$)",
+            re.IGNORECASE,
+        ),
+    ]
+    for pattern in patterns:
+        match = pattern.search(message)
+        if not match:
+            continue
+        title = _clean_capture(match.group(1))
+        lowered = title.lower()
+        if lowered in GENERIC_TARGET_TOKENS or not re.search(r"[a-z]", lowered):
+            continue
+        return title
+    return ""
+
+
+def _merge_sparse_payload(existing: dict[str, Any], repairs: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(existing)
+    for key, value in repairs.items():
+        if value in (None, "", []):
+            continue
+        current = merged.get(key)
+        if current in (None, "", []):
+            merged[key] = value
+        elif isinstance(value, bool) and not current:
+            merged[key] = value
+    return merged
+
+
+def _repair_create_payload(message: str, existing_payload: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(existing_payload)
+    now = datetime.now().astimezone()
+    parsed_date = _extract_explicit_date(message, now=now)
+    parsed_time = _extract_explicit_time(message)
+
+    repairs: dict[str, Any] = {}
+    if not payload.get("title"):
+        title = _extract_create_title(message)
+        if title:
+            repairs["title"] = title
+
+    if not payload.get("start") and parsed_date:
+        if parsed_time:
+            repairs["start"] = _combine_date_and_time(parsed_date, parsed_time, now.tzinfo)
+        else:
+            repairs["start"] = parsed_date.isoformat()
+
+    return _merge_sparse_payload(payload, repairs)
+
+
+def _repair_update_payload(message: str, existing_payload: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(existing_payload)
+    now = datetime.now().astimezone()
+    parsed_date = _extract_explicit_date(message, now=now)
+    parsed_time = _extract_explicit_time(message)
+
+    repairs: dict[str, Any] = {}
+    if not payload.get("start") and parsed_date:
+        if parsed_time:
+            repairs["start"] = _combine_date_and_time(parsed_date, parsed_time, now.tzinfo)
+        else:
+            repairs["start"] = parsed_date.isoformat()
+    elif payload.get("start") and "T" not in str(payload.get("start")) and parsed_time:
+        repairs["start"] = _combine_date_and_time(
+            date.fromisoformat(str(payload["start"])[:10]),
+            parsed_time,
+            now.tzinfo,
+        )
+
+    if not payload.get("title"):
+        rename_match = re.search(
+            r"\b(?:rename|change\s+title\s+to|update\s+title\s+to)\s+(.+)$",
+            message,
+            re.IGNORECASE,
+        )
+        if rename_match:
+            repairs["title"] = _clean_capture(rename_match.group(1))
+
+    if not payload.get("location"):
+        location_match = re.search(
+            r"\b(?:move|change|update)\s+(?:the\s+)?location\s+to\s+(.+)$",
+            message,
+            re.IGNORECASE,
+        )
+        if location_match:
+            repairs["location"] = _clean_capture(location_match.group(1))
+
+    return _merge_sparse_payload(payload, repairs)
+
+
+def _repair_plan(message: str, plan: dict[str, Any]) -> dict[str, Any]:
+    action = plan.get("action") or _infer_requested_action(message)
+    plan["action"] = action
+
+    for field in ("target_hint", "search_query", "calendar_id"):
+        value = plan.get(field)
+        if isinstance(value, str):
+            plan[field] = _clean_capture(value)
+
+    if action in {"update_event", "delete_event"}:
+        extracted_target = _extract_target_hint_from_message(message)
+        if extracted_target and not plan.get("target_hint"):
+            plan["target_hint"] = extracted_target
+        if plan.get("target_hint"):
+            plan["search_query"] = plan["target_hint"]
+
+    if action == "create_event":
+        repaired_event = _repair_create_payload(message, plan.get("event") or {})
+        if repaired_event:
+            plan["event"] = repaired_event
+        if repaired_event.get("title") and repaired_event.get("start"):
+            plan["needs_clarification"] = False
+            plan["clarification_question"] = ""
+            if not plan.get("search_query"):
+                plan["search_query"] = repaired_event["title"]
+
+    if action == "update_event":
+        repaired_updates = _repair_update_payload(message, plan.get("updates") or {})
+        if repaired_updates:
+            plan["updates"] = repaired_updates
+        if any(value for value in repaired_updates.values() if value not in (False, [], "", None)):
+            plan["needs_clarification"] = False
+            plan["clarification_question"] = ""
+
+    return plan
 
 
 def _event_point_to_datetime(
@@ -271,8 +645,12 @@ def _event_match_text(event: dict) -> str:
         display_name = attendee.get("displayName") or attendee.get("email", "").split("@")[0]
         if display_name:
             attendee_parts.append(display_name)
+    start = event.get("start", {}).get("dateTime") or event.get("start", {}).get("date", "")
+    end = event.get("end", {}).get("dateTime") or event.get("end", {}).get("date", "")
     parts = [
         event.get("title", ""),
+        start,
+        end,
         event.get("location", ""),
         (event.get("description") or "")[:300],
         event.get("organizer", ""),
@@ -409,19 +787,35 @@ def _resolve_calendar_id(
 
 
 def _extract_target_hint_from_message(message: str) -> str:
-    """Best-effort extraction of event name from 'delete/change [NAME] appointment' patterns."""
-    pattern = re.compile(
-        r"(?:delete|remove|cancel|update|change|move|reschedule|edit|shift)\s+"
-        r"(?:my\s+|the\s+|an?\s+)?(['\"]?)(.+?)\1"
-        r"\s*(?:appointment|event|meeting|schedule|reminder)?(?:\s+(?:from|to|on|at|by)\b.*)?$",
-        re.IGNORECASE,
-    )
-    m = pattern.search(message.strip())
-    if m:
-        name = m.group(2).strip()
-        # Filter out noise phrases
-        noise = {"appointment", "event", "meeting", "schedule", "reminder", "the", "my", "an", "a"}
-        if name.lower() not in noise and len(name) > 1:
+    """Best-effort extraction of an existing event name from common mutation phrasings."""
+    normalized_message = message.strip()
+
+    quoted_match = re.search(r"['\"]([^'\"]{2,200})['\"]", normalized_message)
+    if quoted_match:
+        quoted_target = _clean_capture(quoted_match.group(1))
+        if quoted_target and not _is_generic_target_text(quoted_target):
+            return quoted_target
+
+    patterns = [
+        re.compile(
+            r"(?:delete|deleted|remove|removed|cancel|cancelled|update|updated|change|changed|move|moved|reschedule|rescheduled|edit|edited|modify|modified|shift|shifted|rename|renamed|postpone|postponed|delay|delayed)\s+"
+            r"(?:my\s+|the\s+|an?\s+)?(['\"]?)(.+?)\1"
+            r"\s*(?:appointment|event|meeting|schedule|reminder)?(?:\s+(?:from|to|on|at|by)\b.*)?$",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"(?:i\s+want\s+)?(?:my\s+|the\s+)?(['\"]?)(.+?)\1"
+            r"\s*(?:appointment|event|meeting|schedule|reminder)?\s+to\s+be\s+"
+            r"(?:update|updated|move|moved|reschedule|rescheduled|change|changed|edit|edited|modify|modified|shift|shifted|rename|renamed|postpone|postponed|delay|delayed)\b(?:\s+(?:from|to|on|at|by)\b.*)?$",
+            re.IGNORECASE,
+        ),
+    ]
+    for pattern in patterns:
+        match = pattern.search(normalized_message)
+        if not match:
+            continue
+        name = _clean_capture(match.group(2))
+        if name and not _is_generic_target_text(name):
             return name
     return ""
 
@@ -542,53 +936,52 @@ def _plan_chat_action(
 
     system_prompt = (
         "You are the planning layer of a Google Calendar assistant. "
-        "Your only job is to parse the user's intent and return a strict JSON plan — no prose, no explanation. "
-        "Available actions: answer, create_event, update_event, delete_event. "
-        "Use 'answer' for any information request (listing, searching, counting, asking about events). "
-        "Use 'create_event' only when the user explicitly wants to add a new event. "
-        "Use 'update_event' / 'delete_event' only when the user wants to modify or remove a specific existing event. "
-        "Flags:\n"
-        "  all_time  — set true ONLY when the user says 'all time', 'ever', 'all events ever'.\n"
-        "  list_all  — set true when the user says 'list all', 'show everything', 'count all events'.\n"
-        "  exclude_holiday_calendars — set true when the user explicitly says to exclude holidays/birthdays.\n"
-        "  needs_clarification — set true ONLY when a truly required field is COMPLETELY absent and cannot "
-        "be inferred from any context. Do NOT set needs_clarification=true in these common cases:\n"
-        "    - User gives event name + new date (even without exact time) → needs_clarification=false.\n"
-        "    - User says 'same time/timing/timings' → needs_clarification=false; set updates.start to "
-        "date-only (YYYY-MM-DD); backend preserves existing time automatically.\n"
-        "    - User confirms, says 'yes', 'ok', 'correct', or selects a shown event → needs_clarification=false.\n"
-        "    - The target event can be inferred from RECENT_HISTORY or HISTORY_EVENTS → needs_clarification=false.\n"
-        "  When needs_clarification IS required: ask exactly ONE short, specific question. Never ask for "
-        "information that was already provided earlier in the conversation.\n"
-        "Date-only update rule: when the user says 'same time/timing/timings' alongside a new date, set "
-        "updates.start = 'YYYY-MM-DD' (date only, no time component). The backend handles time preservation.\n"
-        "Datetime rules:\n"
-        "  - Convert all relative dates ('tomorrow', 'next Monday') using CURRENT_DATETIME.\n"
-        "  - Use ISO 8601 with timezone offset for timed events (e.g. 2026-04-21T14:00:00+05:30).\n"
-        "  - Use YYYY-MM-DD for all-day events and for date-only updates.\n"
-        "  - For recurring events use RRULE strings (e.g. RRULE:FREQ=WEEKLY;BYDAY=MO).\n"
-        "Target event name extraction rules (CRITICAL — follow exactly):\n"
-        "  Pattern: '[action] [NAME] appointment/event/meeting/schedule' → target_hint = NAME, needs_clarification = false.\n"
-        "  Examples:\n"
-        "    'delete Sample title appointment' → target_hint='Sample title', action='delete_event'\n"
-        "    'remove hello appi event' → target_hint='Hello Appi', action='delete_event'\n"
-        "    'change dentist appointment to friday' → target_hint='Dentist', action='update_event'\n"
-        "  Rule: extract the NAME between the action verb and the word 'appointment/event/meeting' (or end of phrase).\n"
-        "  NEVER set needs_clarification=true when the user has already stated an event name.\n"
-        "  Always set search_query = target_hint for update/delete.\n"
-        "Correction rule: when the user starts their message with 'no', 'not', 'I mean', 'actually', or 'wait' "
-        "after the assistant showed a wrong event, treat it as a NEW target identification for the same action. "
-        "Extract the corrected event name or date from what follows. Do NOT repeat the previous event.\n"
-        "  Example: 'no the one which is on april 1' → keep action='delete_event', set time_min/time_max around April 1, "
-        "set target_hint to whatever event the user described, needs_clarification=false.\n"
-        "Clarification follow-up rule: if RECENT_HISTORY shows the assistant asked about an event, "
-        "the user's reply IS the answer — keep the original action, copy the event title from "
-        "RECENT_HISTORY into both target_hint and search_query. Do NOT ask again. "
-        "Pronoun rule: if the user says 'this', 'it', 'that event', or 'the same one', resolve the "
-        "reference using the most recent event in HISTORY_EVENTS and set target_hint to its title. "
-        "Same-time rule: if the user says 'keep it the same' or 'same time/timing/timings', and "
-        "HISTORY_EVENTS has the event, fill start/end from it. If HISTORY_EVENTS is empty, set "
-        "updates.start to the new date only (YYYY-MM-DD) — do NOT ask for the time."
+        "Return ONLY raw JSON — no prose, no markdown, no explanation whatsoever.\n\n"
+        "ACTION SELECTION:\n"
+        "  answer       — user wants info, list, count, or search events\n"
+        "  create_event — user wants to ADD / BOOK / SCHEDULE a NEW event\n"
+        "  update_event — user wants to MOVE / SHIFT / RESCHEDULE / CHANGE / RENAME / EDIT an existing event\n"
+        "  delete_event — user wants to REMOVE / CANCEL / DELETE an existing event\n\n"
+        "CREATE EVENT — fill the 'event' field (REQUIRED for create_event):\n"
+        "  'book appointment June 13 at 5pm for General Dental Checkup'\n"
+        "    → action='create_event', event.title='General Dental Checkup', event.start='2026-06-13T17:00:00+05:30'\n"
+        "  'schedule standup tomorrow at 10am'\n"
+        "    → action='create_event', event.title='Standup', event.start=[tomorrow ISO datetime]\n"
+        "  Rule: if user says book/schedule/add/create + title + date/time → action=create_event, populate event field, needs_clarification=false.\n\n"
+        "UPDATE EVENT — fill the 'updates' field (REQUIRED for update_event):\n"
+        "  'shift dental checkup to June 12 with same timing'\n"
+        "    → action='update_event', target_hint='dental checkup', updates.start='2026-06-12', needs_clarification=false\n"
+        "  'move meeting to June 12 at 3pm'\n"
+        "    → action='update_event', updates.start='2026-06-12T15:00:00+05:30', needs_clarification=false\n"
+        "  'rename dentist to teeth cleaning'\n"
+        "    → action='update_event', updates.title='Teeth Cleaning', needs_clarification=false\n"
+        "  'change location to City Hospital'\n"
+        "    → action='update_event', updates.location='City Hospital', needs_clarification=false\n"
+        "  SAME TIME RULE: 'same time / same timing / same timings' alongside a new date → updates.start='YYYY-MM-DD' (date only, NO time part). Backend preserves the original time automatically.\n"
+        "  ALWAYS set search_query = target_hint for update/delete.\n\n"
+        "DATETIME RULES:\n"
+        "  - Use CURRENT_DATETIME to resolve relative dates: 'tomorrow', 'next Monday', 'June 12' etc.\n"
+        "  - Timed events: ISO 8601 with timezone offset (e.g. 2026-06-13T17:00:00+05:30).\n"
+        "  - All-day or date-only updates: YYYY-MM-DD.\n"
+        "  - Recurring: RRULE string (e.g. RRULE:FREQ=WEEKLY;BYDAY=MO).\n\n"
+        "needs_clarification RULES — set true ONLY when a truly required field is completely absent:\n"
+        "  DO NOT set needs_clarification=true when:\n"
+        "    - User gives event name + new date (even without exact time) → extract date, set needs_clarification=false\n"
+        "    - User says 'same time/timing/timings' → set updates.start=YYYY-MM-DD, needs_clarification=false\n"
+        "    - User says yes/ok/correct/confirm → needs_clarification=false\n"
+        "    - Event can be inferred from RECENT_HISTORY or HISTORY_EVENTS → needs_clarification=false\n"
+        "    - User says book/schedule + title + date → create_event, needs_clarification=false\n"
+        "  When truly needed: ask ONE short specific question.\n\n"
+        "OTHER RULES:\n"
+        "  all_time=true ONLY for 'all time / ever / all events ever'.\n"
+        "  list_all=true for 'list all / show everything / count all'.\n"
+        "  exclude_holiday_calendars=true only when user explicitly says so.\n"
+        "  Target name pattern: '[action] [NAME] appointment/event/meeting' → target_hint=NAME.\n"
+        "  Pronoun rule: 'this'/'it'/'that event' → resolve from HISTORY_EVENTS, set target_hint to its title.\n"
+        "  Correction rule: message starts with 'no/not/I mean/actually/wait' → new target identification, keep action, needs_clarification=false.\n"
+        "  Clarification follow-up: RECENT_HISTORY shows assistant asked → user reply IS the answer, keep action, do NOT ask again.\n"
+        "  Fresh request rule: if USER_MESSAGE clearly asks to create/book/schedule a NEW event, set action=create_event and ignore any unrelated older context.\n"
+        "  Never ask what to change when the user already gave a new date, time, title, or location."
     )
     user_prompt = (
         f"CURRENT_DATETIME: {now}\n"
@@ -626,11 +1019,11 @@ def _plan_chat_action(
     try:
         plan = client.chat_json(system_prompt, user_prompt)
     except OllamaClientError:
-        return _fallback_plan(request_message, calendars)
+        return _repair_plan(request_message, _fallback_plan(request_message, calendars))
 
     if not isinstance(plan, dict) or not plan.get("action"):
-        return _fallback_plan(request_message, calendars)
-    return plan
+        return _repair_plan(request_message, _fallback_plan(request_message, calendars))
+    return _repair_plan(request_message, plan)
 
 
 def _filter_events(events: list[dict], plan: dict[str, Any]) -> list[dict]:
@@ -835,6 +1228,7 @@ def _resolve_target_event(
     query = plan.get("target_hint") or plan.get("search_query") or request_message
     normalized_query = query.strip().lower()
     query_tokens = _meaningful_tokens(query)
+    distinctive_query_tokens = _distinctive_tokens(query)
     if normalized_query:
         exact_title_matches = [
             event
@@ -865,16 +1259,29 @@ def _resolve_target_event(
         for event in events:
             match_tokens = _meaningful_tokens(_event_match_text(event))
             overlap = len(query_tokens & match_tokens)
+            distinctive_overlap = len(distinctive_query_tokens & match_tokens)
+            if distinctive_query_tokens and distinctive_overlap == 0:
+                continue
             if overlap:
-                lexical_matches.append((event, overlap))
+                lexical_matches.append((event, distinctive_overlap, overlap))
 
-        lexical_matches.sort(key=lambda item: item[1], reverse=True)
+        lexical_matches.sort(key=lambda item: (item[1], item[2]), reverse=True)
         if lexical_matches:
-            top_overlap = lexical_matches[0][1]
+            top_distinctive_overlap = lexical_matches[0][1]
+            top_overlap = lexical_matches[0][2]
             strongest_matches = [
-                event for event, overlap in lexical_matches if overlap == top_overlap
+                event
+                for event, distinctive_overlap, overlap in lexical_matches
+                if distinctive_overlap == top_distinctive_overlap and overlap == top_overlap
             ]
-            if top_overlap >= 1 and len(strongest_matches) == 1:
+            if (
+                len(strongest_matches) == 1
+                and (
+                    (distinctive_query_tokens and top_distinctive_overlap >= 1)
+                    or top_overlap >= 2
+                    or len(query_tokens) == 1
+                )
+            ):
                 return strongest_matches[0], strongest_matches
             if strongest_matches:
                 matched_event, ranked_options = _select_ranked_event(
@@ -885,7 +1292,17 @@ def _resolve_target_event(
                 if ranked_options:
                     return None, ranked_options
 
-    return _select_ranked_event(query, events, calendar_lookup)
+    semantic_candidates = events
+    if distinctive_query_tokens:
+        semantic_candidates = [
+            event
+            for event in events
+            if distinctive_query_tokens & _meaningful_tokens(_event_match_text(event))
+        ]
+        if not semantic_candidates:
+            return None, []
+
+    return _select_ranked_event(query, semantic_candidates, calendar_lookup)
 
 
 def _resolve_target_event_with_llm(
@@ -1053,6 +1470,15 @@ def chat(request: Request, payload: ChatRequest):
     # Extract history events BEFORE planning so the planner can see referenced
     # event details (e.g. start/end times when user says "keep it the same").
     history_events = _history_events(payload.history)
+    active_pending_plan = (
+        payload.pending_plan
+        if _likely_follow_up_message(
+            payload.message,
+            payload.pending_plan,
+            selected_event_id=payload.selected_event_id,
+        )
+        else None
+    )
 
     # ── Fast-path: execute a previously confirmed action ────────────────────
     # When the user says yes/confirm/ok in response to a confirmation message,
@@ -1108,7 +1534,7 @@ def chat(request: Request, payload: ChatRequest):
     try:
         plan = _plan_chat_action(
             payload.message, payload.history, history_events, calendars, sample_questions, client,
-            pending_plan=payload.pending_plan,
+            pending_plan=active_pending_plan,
         )
     except OllamaClientError as exc:
         raise HTTPException(status_code=503, detail={"message": str(exc)}) from exc
@@ -1131,15 +1557,15 @@ def chat(request: Request, payload: ChatRequest):
     _has_confirmed_body = bool(payload.pending_plan and payload.pending_plan.get("confirmed_body") is not None)
     _is_clarification_reply = (
         not _has_confirmed_body
-        and payload.pending_plan is not None
+        and active_pending_plan is not None
         and payload.selected_event_id is not None  # card tap — always a clarification reply
     ) or (
         not _has_confirmed_body
-        and payload.pending_plan is not None
+        and active_pending_plan is not None
         and action in {"update_event", "delete_event"}  # planner already agreed
     ) or (
         not _has_confirmed_body
-        and payload.pending_plan is not None
+        and active_pending_plan is not None
         and action == "answer"
         # Short messages without interrogative/listing keywords are likely
         # confirmation replies ("yes", "the one on Monday", "I mean X").
@@ -1151,7 +1577,7 @@ def chat(request: Request, payload: ChatRequest):
     )
 
     if _is_clarification_reply:
-        pp = payload.pending_plan  # type: ignore[assignment]
+        pp = active_pending_plan  # type: ignore[assignment]
         pp_action = pp.get("action", "")
         if pp_action in {"update_event", "delete_event"}:
             # Restore the mutation action the planner may have misclassified.
@@ -1170,6 +1596,11 @@ def chat(request: Request, payload: ChatRequest):
             if not plan.get("time_max"):
                 plan["time_max"] = pp.get("time_max") or ""
     # ── End pending-plan override ────────────────────────────────────────────
+
+    if action == "update_event":
+        plan["updates"] = _repair_update_payload(
+            payload.message, plan.get("updates") or {}
+        )
 
     if (
         action in {"update_event", "delete_event"}
@@ -1292,6 +1723,22 @@ def chat(request: Request, payload: ChatRequest):
     except HttpError as exc:
         translate_google_api_error(exc)
 
+    if action in {"update_event", "delete_event"} and q_param and not candidate_events:
+        try:
+            broad_candidate_events, broad_scanned_calendar_ids = fetch_all_events(
+                creds,
+                calendar_ids=[resolved_calendar_id]
+                if resolved_calendar_id and resolved_calendar_id != "all"
+                else None,
+                q=None,
+                time_min=_fetch_time_min,
+                time_max=_fetch_time_max,
+            )
+        except HttpError as exc:
+            translate_google_api_error(exc)
+        candidate_events = _dedupe_events([*candidate_events, *broad_candidate_events])
+        scanned_calendar_ids = broad_scanned_calendar_ids
+
     filtered_events = _filter_events(
         _dedupe_events([*history_events, *candidate_events]), plan
     )
@@ -1408,7 +1855,9 @@ def chat(request: Request, payload: ChatRequest):
         )
         clarification_target_id: Optional[str] = (
             last_assistant_turn.events[0].get("id")
-            if last_assistant_turn and len(last_assistant_turn.events) == 1
+            if last_assistant_turn
+            and last_assistant_turn.mode == "clarification"
+            and len(last_assistant_turn.events) == 1
             else None
         )
         try:
@@ -1418,17 +1867,29 @@ def chat(request: Request, payload: ChatRequest):
             # Priority 1: explicit card selection via selected_event_id
             if payload.selected_event_id:
                 target_event = next(
-                    (e for e in all_candidates_pool if e.get("id") == payload.selected_event_id),
+                    (
+                        e
+                        for e in all_candidates_pool
+                        if e.get("id") == payload.selected_event_id
+                        and (
+                            not payload.selected_calendar_id
+                            or e.get("calendarId") == payload.selected_calendar_id
+                        )
+                    ),
                     None,
                 )
+                if not target_event:
+                    target_event = next(
+                        (e for e in all_candidates_pool if e.get("id") == payload.selected_event_id),
+                        None,
+                    )
                 if target_event:
                     options = [target_event]
 
             # Priority 2: previous clarification pinpointed one event.
             # Skip when the user is correcting us ("no", "not", "I mean", "actually", etc.)
             # — in that case the user is re-identifying the event, not confirming the old one.
-            _CORRECTION_STARTERS = ("no ", "no,", "not ", "i mean", "actually", "wait,", "wrong", "that's not", "thats not", "i said")
-            _is_correction = any(payload.message.lower().startswith(s) for s in _CORRECTION_STARTERS) or payload.message.lower().strip() == "no"
+            _is_correction = _message_starts_with_correction(payload.message)
             if not target_event and clarification_target_id and not _is_correction:
                 target_event = next(
                     (e for e in filtered_events if e.get("id") == clarification_target_id),

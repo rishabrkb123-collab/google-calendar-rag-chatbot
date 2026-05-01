@@ -78,7 +78,7 @@ The system should identify events properly for any calendar domain, not only den
 | OAuth | `google-auth`, `google-auth-oauthlib` | `backend/auth.py`, `backend/calendar_api.py` | Google login and token exchange | required for Google Calendar access |
 | Google Calendar API | `google-api-python-client` | `backend/calendar_api.py` | list calendars, fetch events, create, patch, delete | official API client |
 | Env Loading | `python-dotenv` | `backend/config.py` | load `backend/.env` | local configuration management |
-| LLM Provider | Ollama | `backend/ollama_client.py` | planner and answer generation when running local/cloud Ollama-compatible endpoint | low-cost local-first option |
+| LLM Provider | Ollama | `backend/ollama_client.py` | planner, disambiguation, and answer generation | local-first inference with a strong structured-output model |
 | Vector DB | ChromaDB | `backend/vector_store.py`, `backend/chroma_db/` | persistent storage for sample question embeddings | simple local vector storage |
 | Embeddings | Sentence Transformers `all-MiniLM-L6-v2` | `backend/vector_store.py` | semantic embedding for retrieval/ranking | strong lightweight embedding model |
 | Testing Backend | Pytest | `tests/backend/` | backend regression tests | straightforward Python testing |
@@ -91,12 +91,12 @@ The system should identify events properly for any calendar domain, not only den
 
 | Model / Provider | Config Source | Where Used | Purpose |
 |---|---|---|---|
-| `deepseek-v3.1:671b-cloud` via Ollama | `backend/.env` `OLLAMA_CHAT_MODEL` and `backend/config.py` default | `backend/chatbot.py` through `OllamaClient` | planning user intent and generating final natural-language answers |
+| `gpt-oss:20b-cloud` via Ollama Cloud | `backend/.env` `OLLAMA_CHAT_MODEL` and `backend/config.py` default | `backend/chatbot.py` through `OllamaClient` | planning user intent, disambiguating target events, and generating final natural-language answers |
 | `all-MiniLM-L6-v2` | hardcoded in `backend/vector_store.py` | `backend/vector_store.py` | embeddings for semantic retrieval over sample questions and event text |
 
 ### How model selection works
 
-The backend uses the configured Ollama-compatible chat client:
+The backend uses the configured Ollama chat client:
 
 ```python
 def _build_llm_client():
@@ -104,9 +104,11 @@ def _build_llm_client():
     return OllamaClient(
         base_url=cfg["base_url"],
         chat_model=cfg["chat_model"],
-        api_key=cfg.get("api_key", ""),
+        api_key=cfg["api_key"],
     )
 ```
+
+`gpt-oss:20b-cloud` is the default because this app needs fast responses plus reliable prompt-following and strict JSON plans. It is a better speed/quality fit here than the slower `deepseek-v3.1:671b-cloud` path.
 
 ### Why each model exists
 
@@ -192,8 +194,8 @@ def _build_llm_client():
                          |                                             |
                          v                                             v
               +----------------------+                    +----------------------+
-              | LLM Provider         |                    | Retrieval Layer      |
-              | Ollama-compatible    |                    | Chroma + embeddings  |
+               | LLM Provider         |                    | Retrieval Layer      |
+               | Ollama + gpt-oss:20b-cloud |              | Chroma + embeddings  |
               +----------------------+                    +----------+-----------+
                                                                      |
                                                                      v
@@ -218,7 +220,7 @@ flowchart TD
     B --> A[Auth Router<br/>Google OAuth]
     B --> C[Calendar API Wrapper<br/>backend/calendar_api.py]
     B --> H[Chat Engine<br/>backend/chatbot.py]
-    H --> L[LLM Client<br/>Ollama-compatible]
+    H --> L[LLM Client<br/>Ollama gpt-oss:20b-cloud]
     H --> V[Vector Store<br/>ChromaDB + embeddings]
     V --> Q[Sample Question Files]
     C --> G[Google Calendar API]
@@ -427,6 +429,13 @@ Correctly identify the intended event across any domain such as:
 | organizer match | organizer email | useful for externally created events |
 | history event reference | prior assistant event cards | resolves `that one`, `it`, `this event` |
 | semantic ranking | embedding similarity | fallback when lexical match is not enough |
+
+### Additional safety rules now enforced
+
+- stale clarification state is ignored for fresh requests, so a new `create` message is not forced into an older update/delete flow
+- follow-up replies like `the date - shift it to June 12th` are repaired deterministically even if the planner leaves `updates` empty
+- generic overlap alone is not enough for destructive matches, so `nose checkup` will not auto-match `routine dental checkup` just because both contain `checkup`
+- event-card taps send both `selected_event_id` and `selected_calendar_id` so the backend can lock onto the exact chosen event
 
 ### Event selection flowchart
 
@@ -742,7 +751,7 @@ Why used:
 REDIRECT_URI=http://localhost:8000/auth/callback
 FRONTEND_URL=http://localhost:5174
 OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_CHAT_MODEL=deepseek-v3.1:671b-cloud
+OLLAMA_CHAT_MODEL=gpt-oss:20b-cloud
 ```
 
 ### Frontend proxy

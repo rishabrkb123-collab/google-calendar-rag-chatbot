@@ -36,7 +36,7 @@ class OllamaClient:
             response.raise_for_status()
         except httpx.ConnectError as exc:
             raise OllamaClientError(
-                "Ollama is not reachable. Check your OLLAMA_BASE_URL and internet connection."
+                "Ollama is not reachable. Make sure the Ollama app/server is running and OLLAMA_BASE_URL is correct."
             ) from exc
         except httpx.HTTPStatusError as exc:
             status = exc.response.status_code
@@ -56,7 +56,6 @@ class OllamaClient:
             raise OllamaClientError("Ollama returned invalid JSON.") from exc
 
     def ensure_ready(self) -> dict[str, Any]:
-        """Check connectivity. For cloud models, just verify the API key works."""
         try:
             response = httpx.get(
                 f"{self.base_url}/api/tags",
@@ -66,17 +65,14 @@ class OllamaClient:
             response.raise_for_status()
         except httpx.ConnectError as exc:
             raise OllamaClientError(
-                "Ollama is not reachable. Check your OLLAMA_BASE_URL and internet connection."
+                "Ollama is not reachable. Make sure the Ollama app/server is running and OLLAMA_BASE_URL is correct."
             ) from exc
         except httpx.HTTPStatusError as exc:
             status = exc.response.status_code
             if status == 401:
                 raise OllamaClientError(
-                    "Ollama API key is invalid or missing. Set OLLAMA_API_KEY in backend/.env — "
-                    "get one at https://ollama.com/settings/api-keys"
+                    "Ollama API key is invalid or missing. Set OLLAMA_API_KEY in backend/.env"
                 ) from exc
-            # Cloud endpoint may return 404/405 for /api/tags — treat as OK,
-            # the model will be validated on the first actual chat request.
             if status in (404, 405):
                 return {"models": [{"name": self.chat_model}]}
             raise OllamaClientError(
@@ -87,12 +83,12 @@ class OllamaClient:
 
         try:
             data = response.json()
-            # If no models listed but we have a cloud model configured, surface it.
-            if not data.get("models") and self.chat_model:
-                data["models"] = [{"name": self.chat_model}]
-            return data
         except json.JSONDecodeError as exc:
             raise OllamaClientError("Ollama returned invalid JSON.") from exc
+
+        if not data.get("models") and self.chat_model:
+            data["models"] = [{"name": self.chat_model}]
+        return data
 
     def chat_json(self, system_prompt: str, user_prompt: str) -> dict[str, Any]:
         response = self._post(

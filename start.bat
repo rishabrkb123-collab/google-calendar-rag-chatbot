@@ -7,6 +7,14 @@ set "FRONTEND=%ROOT%frontend"
 set "PYTHON=%BACKEND%\venv\Scripts\python.exe"
 set "BACKEND_PORT=8000"
 set "FRONTEND_PORT=5174"
+set "OLLAMA_BASE_URL=https://ollama.com"
+set "OLLAMA_PORT=11434"
+set "OLLAMA_MODEL=gpt-oss:20b-cloud"
+
+if exist "%BACKEND%\.env" (
+    for /f "usebackq tokens=1* delims==" %%a in (`findstr /b /c:"OLLAMA_BASE_URL=" "%BACKEND%\.env"`) do set "OLLAMA_BASE_URL=%%b"
+    for /f "usebackq tokens=1* delims==" %%a in (`findstr /b /c:"OLLAMA_CHAT_MODEL=" "%BACKEND%\.env"`) do set "OLLAMA_MODEL=%%b"
+)
 
 echo ================================================
 echo  Calendar Assistant - Starting up
@@ -24,19 +32,24 @@ if not exist "%PYTHON%" (
     exit /b 1
 )
 
+:: ── Ensure Ollama is running and the recommended model exists ────────────────
+echo [1/5] Checking Ollama...
+call :ensure_ollama_ready "%OLLAMA_BASE_URL%"
+if errorlevel 1 exit /b 1
+
 :: ── Verify target ports are free ─────────────────────────────────────────────
-echo [1/4] Checking ports %BACKEND_PORT% and %FRONTEND_PORT%...
+echo [2/5] Checking ports %BACKEND_PORT% and %FRONTEND_PORT%...
 call :ensure_port_free %BACKEND_PORT% Backend
 if errorlevel 1 exit /b 1
 call :ensure_port_free %FRONTEND_PORT% Frontend
 if errorlevel 1 exit /b 1
 
 :: ── Start backend in new window ──────────────────────────────────────────────
-echo [2/4] Starting backend...
+echo [3/5] Starting backend...
 start "Calendar Backend" cmd /k "title Calendar Backend && cd /d "%ROOT%" && set PYTHONPATH=%ROOT% && "%PYTHON%" -m uvicorn backend.main:app --host 0.0.0.0 --port %BACKEND_PORT%"
 
 :: ── Poll until /health responds (up to 120 s) ────────────────────────────────
-echo [3/4] Waiting for backend (can take 20-30s on first run)...
+echo [4/5] Waiting for backend (can take 20-30s on first run)...
 set /a elapsed=0
 
 :wait_loop
@@ -61,7 +74,7 @@ exit /b 1
 echo   Backend ready after !elapsed!s!
 
 :: ── Start frontend in new window ─────────────────────────────────────────────
-echo [4/4] Starting frontend...
+echo [5/5] Starting frontend...
 start "Calendar Frontend" cmd /k "title Calendar Frontend && cd /d "%FRONTEND%" && npm run dev -- --host 0.0.0.0 --port %FRONTEND_PORT% --strictPort"
 
 :: ── Wait for Vite then open browser ──────────────────────────────────────────
@@ -70,6 +83,7 @@ start "" "http://localhost:%FRONTEND_PORT%"
 
 echo.
 echo ================================================
+echo  Ollama:    %OLLAMA_BASE_URL%  (%OLLAMA_MODEL%)
 echo  Backend:   http://localhost:%BACKEND_PORT%
 echo  Frontend:  http://localhost:%FRONTEND_PORT%
 echo ================================================
@@ -80,6 +94,63 @@ echo.
 pause
 endlocal
 goto :eof
+
+:ensure_ollama_ready
+set "OLLAMA_BASE=%~1"
+if /i not "%OLLAMA_BASE%"=="http://127.0.0.1:11434" if /i not "%OLLAMA_BASE%"=="http://localhost:11434" (
+    echo   Using remote Ollama endpoint %OLLAMA_BASE%.
+    exit /b 0
+)
+
+set "OLLAMA_PID="
+for /f "usebackq delims=" %%p in (`powershell -NoProfile -Command "$c = Get-NetTCPConnection -LocalPort %OLLAMA_PORT% -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if ($c) { $c }"`) do (
+    set "OLLAMA_PID=%%p"
+)
+
+if not defined OLLAMA_PID (
+    where ollama >nul 2>&1
+    if errorlevel 1 (
+        echo ERROR: Ollama was not found in PATH.
+        echo Install Ollama from https://ollama.com/download and rerun start.bat
+        pause
+        exit /b 1
+    )
+
+    echo   Starting Ollama server in a new window...
+    start "Calendar Ollama" cmd /k "title Calendar Ollama && ollama serve"
+)
+
+set /a ollama_elapsed=0
+:wait_ollama_loop
+curl -s -f -o nul --max-time 2 http://127.0.0.1:%OLLAMA_PORT%/api/tags >nul 2>&1
+if !errorlevel!==0 goto ollama_ready
+if !ollama_elapsed! geq 60 goto ollama_timeout
+timeout /t 2 /nobreak >nul
+set /a ollama_elapsed+=2
+goto wait_ollama_loop
+
+:ollama_timeout
+echo ERROR: Ollama did not start within 60s.
+echo Check the "Calendar Ollama" window for errors.
+pause
+exit /b 1
+
+:ollama_ready
+where ollama >nul 2>&1
+if errorlevel 1 (
+    echo   Ollama server is running, but the CLI is not available to verify the model.
+    exit /b 0
+)
+
+ollama list | findstr /i /c:"%OLLAMA_MODEL%" >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: Ollama model %OLLAMA_MODEL% is not available in your current Ollama account.
+    echo Open the Ollama app, sign in to Ollama Cloud, and make sure this model is available.
+    echo You can also change OLLAMA_CHAT_MODEL in backend\.env if you prefer another cloud model.
+    pause
+    exit /b 1
+)
+exit /b 0
 
 :ensure_port_free
 set "TARGET_PORT=%~1"

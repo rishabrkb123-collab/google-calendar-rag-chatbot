@@ -12,13 +12,27 @@ ENV_PATH = BACKEND_DIR / ".env"
 DEFAULT_REDIRECT_URI = "http://localhost:8000/auth/callback"
 DEFAULT_FRONTEND_URL = "http://localhost:5174"
 DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
-DEFAULT_OLLAMA_CHAT_MODEL = "deepseek-v3.1:671b-cloud"
+# Use Ollama Cloud by default. gpt-oss:20b-cloud is the best speed/quality
+# fit here: much faster than deepseek-v3.1:671b-cloud while still good at
+# planner-style prompts and strict JSON extraction.
+DEFAULT_OLLAMA_CHAT_MODEL = "gpt-oss:20b-cloud"
 DEFAULT_SAMPLE_QUESTIONS_FILE = PROJECT_ROOT / "google_calendar_rag_1000_questions.txt"
 DEFAULT_ACTION_SAMPLE_QUESTIONS_DIR = PROJECT_ROOT / "rag_samples"
 DEFAULT_CHROMA_DB_PATH = BACKEND_DIR / "chroma_db"
 
 # Load environment variables once from the backend-specific .env file.
 load_dotenv(dotenv_path=ENV_PATH, override=True)
+
+
+def _normalize_url(value: str) -> str:
+    url = value.strip().rstrip("/")
+    if url and not url.startswith(("http://", "https://")):
+        url = f"https://{url}"
+    return url
+
+
+def get_render_external_url() -> str:
+    return _normalize_url(os.getenv("RENDER_EXTERNAL_URL", ""))
 
 
 def _candidate_credentials_paths() -> list[Path]:
@@ -69,12 +83,14 @@ def _load_google_client_file() -> dict:
 
 def get_google_oauth_config() -> dict:
     file_config = _load_google_client_file()
+    render_external_url = get_render_external_url()
     client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip() or file_config["client_id"]
     client_secret = (
         os.getenv("GOOGLE_CLIENT_SECRET", "").strip() or file_config["client_secret"]
     )
     redirect_uri = (
         os.getenv("REDIRECT_URI", "").strip()
+        or (f"{render_external_url}/auth/callback" if render_external_url else "")
         or file_config["redirect_uri"]
         or DEFAULT_REDIRECT_URI
     )
@@ -93,18 +109,28 @@ def get_google_oauth_config() -> dict:
 
 
 def get_frontend_url() -> str:
-    return os.getenv("FRONTEND_URL", DEFAULT_FRONTEND_URL)
+    configured = _normalize_url(os.getenv("FRONTEND_URL", ""))
+    return configured or get_render_external_url() or DEFAULT_FRONTEND_URL
 
 
 def get_secret_key() -> str:
     return os.getenv("SECRET_KEY", "dev-secret-change-me")
 
 
+def get_session_https_only() -> bool:
+    configured = os.getenv("SESSION_HTTPS_ONLY", "").strip().lower()
+    if configured in {"1", "true", "yes", "on"}:
+        return True
+    if configured in {"0", "false", "no", "off"}:
+        return False
+    return bool(get_render_external_url())
+
+
 def get_ollama_config() -> dict:
     return {
-        "base_url": os.getenv("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE_URL),
+        "base_url": os.getenv("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE_URL).strip(),
         "api_key": os.getenv("OLLAMA_API_KEY", "").strip(),
-        "chat_model": os.getenv("OLLAMA_CHAT_MODEL", DEFAULT_OLLAMA_CHAT_MODEL),
+        "chat_model": os.getenv("OLLAMA_CHAT_MODEL", DEFAULT_OLLAMA_CHAT_MODEL).strip(),
     }
 
 

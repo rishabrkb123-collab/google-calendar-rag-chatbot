@@ -13,6 +13,7 @@ from backend.config import (
     get_frontend_url,
     get_google_oauth_config,
     get_secret_key,
+    get_session_https_only,
 )
 from backend.auth import router as auth_router
 from backend.chatbot import router as chatbot_router
@@ -34,7 +35,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=get_secret_key(),
     same_site="lax",
-    https_only=False,
+    https_only=get_session_https_only(),
 )
 
 app.add_middleware(

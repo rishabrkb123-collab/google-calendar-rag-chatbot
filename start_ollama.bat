@@ -5,15 +5,17 @@ where ollama >nul 2>&1
 if errorlevel 1 (
     echo Ollama CLI was not found.
     echo Install Ollama from https://ollama.com/download.
-    echo This project uses an Ollama cloud chat model configured in backend\.env
-    echo and local Sentence Transformers embeddings loaded by the Python backend.
     echo.
     echo Press any key to close this window.
     pause >nul
     exit /b 1
 )
 
-echo Starting Ollama server...
+echo This project is configured to use Ollama Cloud by default.
+echo start_ollama.bat is only needed if you switch OLLAMA_BASE_URL back to a local server.
+echo.
+echo Starting a local Ollama server anyway...
+
 ollama serve
 
 echo.

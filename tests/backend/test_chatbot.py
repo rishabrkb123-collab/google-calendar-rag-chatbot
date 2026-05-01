@@ -40,7 +40,7 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
         },
     )
     mock_llm = MagicMock()
-    mock_llm.ensure_ready.return_value = {"models": [{"name": "deepseek-v3.1:671b-cloud"}]}
+    mock_llm.ensure_ready.return_value = {"models": [{"name": "gpt-oss:20b-cloud"}]}
     monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
 
     response = client.get("/chat/health")
@@ -48,7 +48,7 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert body["sample_questions_loaded"] == 2
-    assert "deepseek-v3.1:671b-cloud" in body["models"]
+    assert "gpt-oss:20b-cloud" in body["models"]
     assert body["action_sample_counts"]["create_event"] == 1
 
 
@@ -287,6 +287,83 @@ def test_chat_update_can_resolve_follow_up_from_history_events(client, monkeypat
     assert body["events"][0]["title"] == "Sample title"
 
 
+def test_chat_update_follow_up_repairs_date_change_from_clarification_reply(
+    client, monkeypatch
+):
+    target_event = {
+        "id": "evt-1",
+        "calendarId": "primary",
+        "title": "routine dental checkup",
+        "start": {"dateTime": "2026-04-30T17:00:00+05:30"},
+        "end": {"dateTime": "2026-04-30T18:00:00+05:30"},
+        "description": "",
+        "location": "",
+        "attendees": [],
+    }
+
+    monkeypatch.setattr("backend.chatbot.get_tokens", lambda request: {"token": "fake"})
+    monkeypatch.setattr("backend.chatbot.build_credentials", lambda tokens: MagicMock())
+    monkeypatch.setattr(
+        "backend.chatbot.list_calendars",
+        lambda creds: [{"id": "primary", "name": "Personal", "primary": True}],
+    )
+    monkeypatch.setattr(
+        "backend.chatbot.fetch_all_events",
+        lambda creds, calendar_ids=None, q=None, time_min=None, time_max=None, max_results=250: (
+            [target_event],
+            ["primary"],
+        ),
+    )
+    monkeypatch.setattr(
+        "backend.chatbot._load_sample_questions",
+        lambda: ["Shift my routine dental checkup to June 12th with the same timings."],
+    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "answer",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "",
+        "search_query": "",
+        "target_hint": "",
+        "time_min": "",
+        "time_max": "",
+        "event": {},
+        "updates": {},
+    }
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+
+    response = client.post(
+        "/chat",
+        json={
+            "message": "the date - shift the date to June 12th",
+            "history": [
+                {
+                    "role": "assistant",
+                    "content": "What would you like to change about 'routine dental checkup'?",
+                    "events": [target_event],
+                }
+            ],
+            "pending_plan": {
+                "action": "update_event",
+                "updates": {},
+                "target_hint": "routine dental checkup",
+                "time_min": "",
+                "time_max": "",
+                "calendar_id": "primary",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "confirmation"
+    assert body["events"][0]["id"] == "evt-1"
+    assert body["pending_plan"]["confirmed_body"]["start"]["dateTime"].startswith(
+        "2026-06-12T17:00:00"
+    )
+
+
 def test_chat_delete_does_not_delete_unrelated_event_when_title_does_not_match(
     client, monkeypatch
 ):
@@ -350,6 +427,238 @@ def test_chat_delete_does_not_delete_unrelated_event_when_title_does_not_match(
     assert "couldn't find a matching event" in body["answer"].lower()
 
 
+def test_chat_create_new_request_is_not_hijacked_by_stale_pending_plan(
+    client, monkeypatch
+):
+    captured = {}
+
+    monkeypatch.setattr("backend.chatbot.get_tokens", lambda request: {"token": "fake"})
+    monkeypatch.setattr("backend.chatbot.build_credentials", lambda tokens: MagicMock())
+    monkeypatch.setattr(
+        "backend.chatbot.list_calendars",
+        lambda creds: [{"id": "primary", "name": "Personal", "primary": True}],
+    )
+    monkeypatch.setattr(
+        "backend.chatbot.fetch_all_events",
+        lambda creds, calendar_ids=None, q=None, time_min=None, time_max=None, max_results=250: (
+            [],
+            ["primary"],
+        ),
+    )
+    monkeypatch.setattr(
+        "backend.chatbot._load_sample_questions",
+        lambda: ["Create an event for General Dental Checkup on 13th June at 5pm."],
+    )
+
+    def fake_chat_json(system_prompt, user_prompt):
+        assert "Fresh request rule" in system_prompt
+        assert "ACTIVE_OPERATION" not in user_prompt
+        assert "INFERRED_REQUESTED_ACTION: create_event" in user_prompt
+        return {
+            "action": "create_event",
+            "needs_clarification": False,
+            "clarification_question": "",
+            "calendar_id": "primary",
+            "search_query": "",
+            "target_hint": "",
+            "time_min": "",
+            "time_max": "",
+            "event": {},
+            "updates": {},
+        }
+
+    mock_llm = MagicMock()
+    mock_llm.chat_json.side_effect = fake_chat_json
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+
+    def fake_create_event(creds, calendar_id, body):
+        captured["body"] = body
+        return {
+            "id": "evt-new",
+            "calendarId": calendar_id,
+            "title": body.get("summary"),
+            "start": body.get("start"),
+            "end": body.get("end"),
+            "description": body.get("description", ""),
+            "location": body.get("location", ""),
+            "attendees": [],
+        }
+
+    monkeypatch.setattr("backend.chatbot.create_event", fake_create_event)
+
+    response = client.post(
+        "/chat",
+        json={
+            "message": "create an event for General Dental Checkup on 13th June at 5pm",
+            "history": [],
+            "pending_plan": {
+                "action": "update_event",
+                "updates": {},
+                "target_hint": "routine dental checkup",
+                "time_min": "",
+                "time_max": "",
+                "calendar_id": "primary",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "action"
+    assert body["events"][0]["title"] == "General Dental Checkup"
+    assert captured["body"]["summary"] == "General Dental Checkup"
+    assert captured["body"]["start"]["dateTime"].startswith("2026-06-13T17:00:00")
+
+
+def test_chat_update_does_not_reuse_last_action_event_for_new_request(
+    client, monkeypatch
+):
+    previous_event = {
+        "id": "evt-1",
+        "calendarId": "primary",
+        "title": "routine dental checkup",
+        "start": {"dateTime": "2026-07-15T17:00:00+05:30"},
+        "end": {"dateTime": "2026-07-15T18:00:00+05:30"},
+        "description": "",
+        "location": "",
+        "attendees": [],
+    }
+    target_event = {
+        "id": "evt-2",
+        "calendarId": "primary",
+        "title": "Root Canal treatment",
+        "start": {"dateTime": "2026-06-18T17:00:00+05:30"},
+        "end": {"dateTime": "2026-06-18T18:00:00+05:30"},
+        "description": "",
+        "location": "",
+        "attendees": [],
+    }
+
+    monkeypatch.setattr("backend.chatbot.get_tokens", lambda request: {"token": "fake"})
+    monkeypatch.setattr("backend.chatbot.build_credentials", lambda tokens: MagicMock())
+    monkeypatch.setattr(
+        "backend.chatbot.list_calendars",
+        lambda creds: [{"id": "primary", "name": "Personal", "primary": True}],
+    )
+    monkeypatch.setattr(
+        "backend.chatbot.fetch_all_events",
+        lambda creds, calendar_ids=None, q=None, time_min=None, time_max=None, max_results=250: (
+            [target_event],
+            ["primary"],
+        ),
+    )
+    monkeypatch.setattr(
+        "backend.chatbot._load_sample_questions",
+        lambda: ["Move my Root Canal treatment to December 31st with the same timings."],
+    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "update_event",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "primary",
+        "search_query": "Root Canal treatment",
+        "target_hint": "Root Canal treatment",
+        "time_min": "",
+        "time_max": "",
+        "event": {},
+        "updates": {
+            "start": "2026-12-31",
+            "all_day": False,
+        },
+    }
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+
+    response = client.post(
+        "/chat",
+        json={
+            "message": "i want my Root Canal treatment to be shifted to December 31st with the same timings",
+            "history": [
+                {
+                    "role": "assistant",
+                    "content": "Updated 'routine dental checkup'.",
+                    "events": [previous_event],
+                    "mode": "action",
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "confirmation"
+    assert body["events"][0]["id"] == "evt-2"
+    assert body["events"][0]["title"] == "Root Canal treatment"
+
+
+def test_chat_update_retries_without_query_when_target_search_returns_nothing(
+    client, monkeypatch
+):
+    target_event = {
+        "id": "evt-2",
+        "calendarId": "primary",
+        "title": "Root Canal treatment",
+        "start": {"dateTime": "2026-06-18T17:00:00+05:30"},
+        "end": {"dateTime": "2026-06-18T18:00:00+05:30"},
+        "description": "",
+        "location": "",
+        "attendees": [],
+    }
+    captured_queries = []
+
+    monkeypatch.setattr("backend.chatbot.get_tokens", lambda request: {"token": "fake"})
+    monkeypatch.setattr("backend.chatbot.build_credentials", lambda tokens: MagicMock())
+    monkeypatch.setattr(
+        "backend.chatbot.list_calendars",
+        lambda creds: [{"id": "primary", "name": "Personal", "primary": True}],
+    )
+
+    def fake_fetch_all_events(
+        creds, calendar_ids=None, q=None, time_min=None, time_max=None, max_results=250
+    ):
+        captured_queries.append(q)
+        if q == "Root Canal treatment":
+            return ([], ["primary"])
+        return ([target_event], ["primary"])
+
+    monkeypatch.setattr("backend.chatbot.fetch_all_events", fake_fetch_all_events)
+    monkeypatch.setattr(
+        "backend.chatbot._load_sample_questions",
+        lambda: ["Move my Root Canal treatment to December 31st with the same timings."],
+    )
+    mock_llm = MagicMock()
+    mock_llm.chat_json.return_value = {
+        "action": "update_event",
+        "needs_clarification": False,
+        "clarification_question": "",
+        "calendar_id": "primary",
+        "search_query": "",
+        "target_hint": "",
+        "time_min": "",
+        "time_max": "",
+        "event": {},
+        "updates": {
+            "start": "2026-12-31",
+            "all_day": False,
+        },
+    }
+    monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
+
+    response = client.post(
+        "/chat",
+        json={
+            "message": 'i want my "Root Canal treatment" to be shifted to December 31st with the same timings',
+            "history": [],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "confirmation"
+    assert body["events"][0]["id"] == "evt-2"
+    assert captured_queries[:2] == ["Root Canal treatment", None]
+
+
 
 def test_resolve_target_event_can_fall_back_to_semantic_match(monkeypatch):
     dentist_event = {
@@ -383,6 +692,32 @@ def test_resolve_target_event_can_fall_back_to_semantic_match(monkeypatch):
 
     assert matched_event == dentist_event
     assert options == [dentist_event, lunch_event]
+
+
+def test_resolve_target_event_rejects_generic_overlap_when_distinctive_tokens_do_not_match():
+    dentist_event = {
+        "id": "evt-1",
+        "calendarId": "primary",
+        "title": "routine dental checkup",
+        "start": {"dateTime": "2026-04-30T17:00:00+05:30"},
+        "end": {"dateTime": "2026-04-30T18:00:00+05:30"},
+        "description": "",
+        "location": "",
+        "attendees": [],
+    }
+
+    matched_event, options = _resolve_target_event(
+        "delete nose checkup appointmnt",
+        {
+            "target_hint": "nose checkup appointmnt",
+            "search_query": "nose checkup appointmnt",
+        },
+        [dentist_event],
+        [{"id": "primary", "name": "My Calendar", "primary": True}],
+    )
+
+    assert matched_event is None
+    assert options == []
 
 
 def test_resolve_target_event_with_llm_uses_all_events_context():
@@ -586,6 +921,7 @@ def test_resolve_calendar_id_falls_back_to_default_for_unknown_value():
 def test_chat_delete_uses_target_hint_query_and_safe_calendar_fallback(
     client, monkeypatch
 ):
+    captured_queries = []
     captured = {}
 
     monkeypatch.setattr("backend.chatbot.get_tokens", lambda request: {"token": "fake"})
@@ -601,6 +937,7 @@ def test_chat_delete_uses_target_hint_query_and_safe_calendar_fallback(
     def fake_fetch_all_events(
         creds, calendar_ids=None, q=None, time_min=None, time_max=None, max_results=250
     ):
+        captured_queries.append(q)
         captured["calendar_ids"] = calendar_ids
         captured["q"] = q
         captured["time_min"] = time_min
@@ -633,7 +970,7 @@ def test_chat_delete_uses_target_hint_query_and_safe_calendar_fallback(
 
     assert response.status_code == 200
     assert captured["calendar_ids"] is None
-    assert captured["q"] == "Dr Ravi cleaning"
+    assert captured_queries[:2] == ["Dr Ravi cleaning", None]
     assert captured["time_min"]
     assert captured["time_max"]
 
@@ -802,6 +1139,15 @@ def test_infer_requested_action_prefers_delete_over_booking_word():
 
 def test_infer_requested_action_detects_generic_update_queries():
     assert _infer_requested_action("move my call with Rahul to 5 pm") == "update_event"
+
+
+def test_infer_requested_action_detects_shifted_update_queries():
+    assert (
+        _infer_requested_action(
+            "i want my Root Canal treatment to be shifted to December 31st"
+        )
+        == "update_event"
+    )
 
 
 def test_infer_requested_action_detects_generic_answer_queries():

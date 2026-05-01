@@ -66,7 +66,7 @@ export default function ChatPanel() {
     () => messages
       .filter((m) => !m.starter)
       .filter((m) => m.role === 'user' || m.role === 'assistant')
-      .map(({ role, content, events }) => ({ role, content, events: events ?? [] })),
+      .map(({ role, content, events, mode }) => ({ role, content, events: events ?? [], mode: mode ?? null })),
     [messages]
   )
 
@@ -79,7 +79,12 @@ export default function ChatPanel() {
     return null
   }, [messages])
 
-  const sendMessage = async (message, selectedEventId = null, overridePendingPlan = undefined) => {
+  const sendMessage = async (
+    message,
+    selectedEventId = null,
+    overridePendingPlan = undefined,
+    selectedCalendarId = null,
+  ) => {
     if (!message || loading) return
 
     const nextMessages = [
@@ -94,6 +99,7 @@ export default function ChatPanel() {
     try {
       const payload = { message, history }
       if (selectedEventId) payload.selected_event_id = selectedEventId
+      if (selectedCalendarId) payload.selected_calendar_id = selectedCalendarId
       const planToUse = overridePendingPlan !== undefined ? overridePendingPlan : lastPendingPlan
       if (planToUse) payload.pending_plan = planToUse
 
@@ -126,7 +132,7 @@ export default function ChatPanel() {
   const handleEventSelect = (event, messageContent) => {
     const date = formatEventDate(event)
     const label = date ? `"${event.title}" on ${date}` : `"${event.title}"`
-    sendMessage(`I mean the ${label}`, event.id)
+    sendMessage(`I mean the ${label}`, event.id, undefined, event.calendarId ?? null)
   }
 
   const handleConfirm = (pendingPlan) => {
