@@ -33,10 +33,7 @@ Set these in Render:
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 SECRET_KEY=replace-with-a-long-random-secret
-OLLAMA_BASE_URL=https://ollama.com
-OLLAMA_CHAT_MODEL=gpt-oss:20b-cloud
 OLLAMA_API_KEY=your-ollama-cloud-api-key
-SESSION_HTTPS_ONLY=true
 ```
 
 You can use `render.env.example` as the source.
@@ -84,9 +81,13 @@ This deployment assumes Ollama Cloud, not a local Ollama server.
 
 Use:
 
-- `OLLAMA_BASE_URL=https://ollama.com`
-- `OLLAMA_CHAT_MODEL=gpt-oss:20b-cloud`
 - `OLLAMA_API_KEY=<your key>`
+
+The app now defaults to:
+
+- `OLLAMA_BASE_URL=https://ollama.com`
+- `OLLAMA_CHAT_MODEL=gpt-oss:20b`
+- secure session cookies on Render
 
 ## Health check
 

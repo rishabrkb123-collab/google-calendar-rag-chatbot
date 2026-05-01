@@ -11,11 +11,10 @@ PROJECT_ROOT = BACKEND_DIR.parent
 ENV_PATH = BACKEND_DIR / ".env"
 DEFAULT_REDIRECT_URI = "http://localhost:8000/auth/callback"
 DEFAULT_FRONTEND_URL = "http://localhost:5174"
-DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
-# Use Ollama Cloud by default. gpt-oss:20b-cloud is the best speed/quality
-# fit here: much faster than deepseek-v3.1:671b-cloud while still good at
-# planner-style prompts and strict JSON extraction.
-DEFAULT_OLLAMA_CHAT_MODEL = "gpt-oss:20b-cloud"
+DEFAULT_OLLAMA_BASE_URL = "https://ollama.com"
+# Use Ollama Cloud by default. The HTTP API exposes this model as `gpt-oss:20b`.
+# It is a good speed/quality fit for planner-style prompts and JSON extraction.
+DEFAULT_OLLAMA_CHAT_MODEL = "gpt-oss:20b"
 DEFAULT_SAMPLE_QUESTIONS_FILE = PROJECT_ROOT / "google_calendar_rag_1000_questions.txt"
 DEFAULT_ACTION_SAMPLE_QUESTIONS_DIR = PROJECT_ROOT / "rag_samples"
 DEFAULT_CHROMA_DB_PATH = BACKEND_DIR / "chroma_db"

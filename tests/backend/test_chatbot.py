@@ -40,7 +40,7 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
         },
     )
     mock_llm = MagicMock()
-    mock_llm.ensure_ready.return_value = {"models": [{"name": "gpt-oss:20b-cloud"}]}
+    mock_llm.ensure_ready.return_value = {"models": [{"name": "gpt-oss:20b"}]}
     monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
 
     response = client.get("/chat/health")
@@ -48,7 +48,7 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert body["sample_questions_loaded"] == 2
-    assert "gpt-oss:20b-cloud" in body["models"]
+    assert "gpt-oss:20b" in body["models"]
     assert body["action_sample_counts"]["create_event"] == 1
 
 

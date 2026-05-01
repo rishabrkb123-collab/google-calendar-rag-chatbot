@@ -38,3 +38,15 @@ def test_get_session_https_only_honors_explicit_override(monkeypatch):
     monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://google-calendar-rag-chatbot.onrender.com")
 
     assert config.get_session_https_only() is False
+
+
+def test_get_ollama_config_uses_cloud_defaults(monkeypatch):
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+    monkeypatch.delenv("OLLAMA_CHAT_MODEL", raising=False)
+    monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+
+    ollama_config = config.get_ollama_config()
+
+    assert ollama_config["base_url"] == "https://ollama.com"
+    assert ollama_config["chat_model"] == "gpt-oss:20b"
+    assert ollama_config["api_key"] == ""

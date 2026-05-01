@@ -91,7 +91,7 @@ The system should identify events properly for any calendar domain, not only den
 
 | Model / Provider | Config Source | Where Used | Purpose |
 |---|---|---|---|
-| `gpt-oss:20b-cloud` via Ollama Cloud | `backend/.env` `OLLAMA_CHAT_MODEL` and `backend/config.py` default | `backend/chatbot.py` through `OllamaClient` | planning user intent, disambiguating target events, and generating final natural-language answers |
+| `gpt-oss:20b` via Ollama Cloud | `backend/.env` `OLLAMA_CHAT_MODEL` and `backend/config.py` default | `backend/chatbot.py` through `OllamaClient` | planning user intent, disambiguating target events, and generating final natural-language answers |
 | `all-MiniLM-L6-v2` | hardcoded in `backend/vector_store.py` | `backend/vector_store.py` | embeddings for semantic retrieval over sample questions and event text |
 
 ### How model selection works
@@ -108,7 +108,7 @@ def _build_llm_client():
     )
 ```
 
-`gpt-oss:20b-cloud` is the default because this app needs fast responses plus reliable prompt-following and strict JSON plans. It is a better speed/quality fit here than the slower `deepseek-v3.1:671b-cloud` path.
+`gpt-oss:20b` is the default because this app needs fast responses plus reliable prompt-following and strict JSON plans. It is a better speed/quality fit here than the slower `deepseek-v3.1:671b-cloud` path.
 
 ### Why each model exists
 
@@ -195,7 +195,7 @@ def _build_llm_client():
                          v                                             v
               +----------------------+                    +----------------------+
                | LLM Provider         |                    | Retrieval Layer      |
-               | Ollama + gpt-oss:20b-cloud |              | Chroma + embeddings  |
+               | Ollama + gpt-oss:20b |                    | Chroma + embeddings  |
               +----------------------+                    +----------+-----------+
                                                                      |
                                                                      v
@@ -220,7 +220,7 @@ flowchart TD
     B --> A[Auth Router<br/>Google OAuth]
     B --> C[Calendar API Wrapper<br/>backend/calendar_api.py]
     B --> H[Chat Engine<br/>backend/chatbot.py]
-    H --> L[LLM Client<br/>Ollama gpt-oss:20b-cloud]
+    H --> L[LLM Client<br/>Ollama gpt-oss:20b]
     H --> V[Vector Store<br/>ChromaDB + embeddings]
     V --> Q[Sample Question Files]
     C --> G[Google Calendar API]
@@ -751,7 +751,7 @@ Why used:
 REDIRECT_URI=http://localhost:8000/auth/callback
 FRONTEND_URL=http://localhost:5174
 OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_CHAT_MODEL=gpt-oss:20b-cloud
+OLLAMA_CHAT_MODEL=gpt-oss:20b
 ```
 
 ### Frontend proxy

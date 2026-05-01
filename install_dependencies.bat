@@ -160,7 +160,7 @@ echo   - %VERIFY_LOG%
 echo.
 echo Next steps:
 echo   - Install Ollama from https://ollama.com/download if not already installed
-echo   - Sign in to Ollama Cloud and make sure gpt-oss:20b-cloud is available in your Ollama app/account
+echo   - Sign in to Ollama Cloud and make sure gpt-oss:20b is available in your Ollama app/account
 echo   - Start local app with start.bat
 echo   - Configure backend\.env and Google OAuth credentials if not done yet
 echo.

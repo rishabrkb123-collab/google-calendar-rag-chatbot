@@ -9,7 +9,7 @@ set "BACKEND_PORT=8000"
 set "FRONTEND_PORT=5174"
 set "OLLAMA_BASE_URL=https://ollama.com"
 set "OLLAMA_PORT=11434"
-set "OLLAMA_MODEL=gpt-oss:20b-cloud"
+set "OLLAMA_MODEL=gpt-oss:20b"
 
 if exist "%BACKEND%\.env" (
     for /f "usebackq tokens=1* delims==" %%a in (`findstr /b /c:"OLLAMA_BASE_URL=" "%BACKEND%\.env"`) do set "OLLAMA_BASE_URL=%%b"

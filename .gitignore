@@ -1,5 +1,7 @@
 # ── Secrets & credentials ──────────────────────────────────────────────────────
 backend/.env
+render.env
+.env.render
 *.json
 !package.json
 !package-lock.json

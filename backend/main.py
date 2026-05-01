@@ -12,6 +12,7 @@ from backend.config import (
     ENV_PATH,
     get_frontend_url,
     get_google_oauth_config,
+    get_ollama_config,
     get_secret_key,
     get_session_https_only,
 )
@@ -192,6 +193,7 @@ def health():
 @app.get("/debug/env")
 def debug_env():
     oauth_config = get_google_oauth_config()
+    ollama_config = get_ollama_config()
     client_id = oauth_config["client_id"]
     secret = oauth_config["client_secret"]
     return {
@@ -205,6 +207,9 @@ def debug_env():
         else client_id,
         "secret_loaded": bool(secret and secret != "FILL_IN"),
         "redirect_uri": oauth_config["redirect_uri"],
+        "ollama_base_url": ollama_config["base_url"],
+        "ollama_chat_model": ollama_config["chat_model"],
+        "ollama_api_key_loaded": bool(ollama_config["api_key"]),
     }
 
 

@@ -17,11 +17,5 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
-      - key: OLLAMA_BASE_URL
-        value: "https://ollama.com"
-      - key: OLLAMA_CHAT_MODEL
-        value: "gpt-oss:20b-cloud"
       - key: OLLAMA_API_KEY
         sync: false
-      - key: SESSION_HTTPS_ONLY
-        value: "true"
