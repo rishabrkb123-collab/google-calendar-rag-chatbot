@@ -670,6 +670,33 @@ def _parse_sample_questions(text: str) -> list[str]:
     return questions
 
 
+def _rank_texts_lexically(
+    query: str, texts: list[str], top_k: int
+) -> list[tuple[int, float]]:
+    query_lower = query.lower().strip()
+    query_tokens = _meaningful_tokens(query)
+    ranked: list[tuple[int, float]] = []
+
+    for index, text in enumerate(texts):
+        text_lower = text.lower()
+        text_tokens = _meaningful_tokens(text)
+        overlap = len(query_tokens & text_tokens)
+        phrase_bonus = 2.0 if query_lower and query_lower in text_lower else 0.0
+        prefix_bonus = 0.5 if query_lower and text_lower.startswith(query_lower) else 0.0
+        score = overlap + phrase_bonus + prefix_bonus
+        if score > 0:
+            ranked.append((index, score))
+
+    ranked.sort(key=lambda item: item[1], reverse=True)
+    return ranked[:top_k]
+
+
+def _select_similar_questions(
+    query: str, questions: list[str], top_k: int
+) -> list[str]:
+    return [questions[index] for index, _ in _rank_texts_lexically(query, questions, top_k)]
+
+
 def _sample_paths() -> list[Path]:
     primary_path = get_sample_questions_path()
     paths = [primary_path]
@@ -910,11 +937,13 @@ def _plan_chat_action(
         requested_action = pending_plan["action"]
 
     action_samples = _load_action_sample_questions().get(requested_action, [])
-    vs = get_vector_store()
-    vs.seed_sample_questions(sample_questions)
-    similar_questions = vs.query_sample_questions(request_message, top_k=6) if sample_questions else []
+    similar_questions = (
+        _select_similar_questions(request_message, sample_questions, top_k=6)
+        if sample_questions
+        else []
+    )
     similar_action_samples = (
-        [action_samples[i] for i, _ in vs.rank_texts(request_message, action_samples, top_k=6)]
+        _select_similar_questions(request_message, action_samples, top_k=6)
         if action_samples
         else []
     )
@@ -1768,8 +1797,6 @@ def chat(request: Request, payload: ChatRequest):
 
     if action == "answer":
         try:
-            vs = get_vector_store()
-            relevant_questions = vs.query_sample_questions(payload.message, top_k=6) if sample_questions else []
             calendar_lookup = {calendar["id"]: calendar for calendar in calendars}
             if plan.get("list_all") or plan.get("all_time"):
                 # User wants every event — skip relevance ranking, return all.
@@ -1791,7 +1818,7 @@ def chat(request: Request, payload: ChatRequest):
                 payload.history,
                 plan,
                 relevant_events,
-                relevant_questions,
+                [],
                 calendars,
                 client,
             )
