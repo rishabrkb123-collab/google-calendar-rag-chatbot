@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -32,6 +33,19 @@ from backend.session import get_tokens
 
 app = FastAPI(title="Calendar Chatbot API")
 
+
+def _warm_chat_runtime() -> None:
+    """Best-effort warm-up so the first chat request is less likely to cold-start."""
+    try:
+        from backend.chatbot import _load_sample_questions
+        from backend.vector_store import get_vector_store
+
+        questions = _load_sample_questions()
+        get_vector_store().seed_sample_questions(questions)
+    except Exception:
+        # Startup warm-up is best-effort only; request-time code still handles normal operation.
+        pass
+
 app.add_middleware(
     SessionMiddleware,
     secret_key=get_secret_key(),
@@ -46,6 +60,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def startup_warmup():
+    threading.Thread(target=_warm_chat_runtime, daemon=True).start()
 
 app.include_router(auth_router)
 app.include_router(chatbot_router)

@@ -39,6 +39,14 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
             "delete_event": [],
         },
     )
+    monkeypatch.setattr(
+        "backend.chatbot.get_ollama_config",
+        lambda: {
+            "base_url": "https://ollama.com",
+            "api_key": "",
+            "chat_model": "gpt-oss:20b",
+        },
+    )
     mock_llm = MagicMock()
     mock_llm.ensure_ready.return_value = {"models": [{"name": "gpt-oss:20b"}]}
     monkeypatch.setattr("backend.chatbot._build_llm_client", lambda: mock_llm)
@@ -50,6 +58,9 @@ def test_chat_health_reports_ollama_and_question_corpus(client, monkeypatch):
     assert body["sample_questions_loaded"] == 2
     assert "gpt-oss:20b" in body["models"]
     assert body["action_sample_counts"]["create_event"] == 1
+    assert body["llm"]["chat_model"] == "gpt-oss:20b"
+    assert body["llm"]["api_key_loaded"] is False
+    assert "api_key" not in body["llm"]
 
 
 def test_load_sample_questions_can_read_directory(tmp_path, monkeypatch):

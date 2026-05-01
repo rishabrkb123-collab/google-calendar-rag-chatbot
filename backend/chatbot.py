@@ -1440,7 +1440,11 @@ def health():
 
     return {
         "status": "ok",
-        "llm": get_ollama_config(),
+        "llm": {
+            "base_url": get_ollama_config()["base_url"],
+            "chat_model": get_ollama_config()["chat_model"],
+            "api_key_loaded": bool(get_ollama_config()["api_key"]),
+        },
         "models": [model.get("name") for model in tags.get("models", [])],
         "sample_questions_loaded": len(_load_sample_questions()),
         "sample_questions_path": str(get_sample_questions_path()),
